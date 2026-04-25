@@ -4,7 +4,14 @@
   "title": "Job",
   "type": "object",
   "additionalProperties": false,
-  "required": ["job_id", "name", "status", "created_at", "updated_at"],
+  "required": [
+    "job_id",
+    "name",
+    "status",
+    "depends_on",
+    "created_at",
+    "updated_at"
+  ],
   "properties": {
     "job_id": {
       "$ref": "./common.schema.json#/$defs/jobId"
@@ -16,6 +23,14 @@
     },
     "status": {
       "$ref": "./common.schema.json#/$defs/jobStatus"
+    },
+    "depends_on": {
+      "type": "array",
+      "maxItems": 2000,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "./common.schema.json#/$defs/jobId"
+      }
     },
     "created_at": {
       "$ref": "./common.schema.json#/$defs/timestamp"

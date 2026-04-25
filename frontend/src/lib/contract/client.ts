@@ -8,7 +8,6 @@ import {
 import type {
   ErrorResponse,
   HealthResponse,
-  JobDependenciesResponse,
   JobDetailResponse,
   JobsListResponse,
   JobStatus,
@@ -38,7 +37,6 @@ export type JobServerClient = {
   listJobs: (params?: ListJobsParams) => Promise<JobsListResponse>;
   getJob: (jobId: string) => Promise<JobDetailResponse>;
   getTasks: (jobId: string) => Promise<JobTasksResponse>;
-  getDependencies: (jobId: string) => Promise<JobDependenciesResponse>;
   openStream: (
     params: OpenStreamParams,
     handlers: StreamHandlers,
@@ -128,11 +126,6 @@ export function createJobServerClient(
       requestJson(
         `/v1/jobs/${encodeURIComponent(jobId)}/tasks`,
         REST_SCHEMA_PATHS.jobTasksResponse,
-      ),
-    getDependencies: (jobId) =>
-      requestJson(
-        `/v1/jobs/${encodeURIComponent(jobId)}/dependencies`,
-        REST_SCHEMA_PATHS.jobDependenciesResponse,
       ),
     openStream: ({ filter, signal }, handlers) =>
       openValidatedEventStream(

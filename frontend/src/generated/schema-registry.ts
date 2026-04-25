@@ -117,33 +117,6 @@ export const schemaRegistry = {
       }
     }
   },
-  "models/dependency-edge.schema.json":   {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://jobserver.example.io/schemas/models/dependency-edge.schema.json",
-    "title": "Dependency Edge",
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "dependency_id",
-      "source_job_id",
-      "target_job_id",
-      "required"
-    ],
-    "properties": {
-      "dependency_id": {
-        "$ref": "./common.schema.json#/$defs/dependencyId"
-      },
-      "source_job_id": {
-        "$ref": "./common.schema.json#/$defs/jobId"
-      },
-      "target_job_id": {
-        "$ref": "./common.schema.json#/$defs/jobId"
-      },
-      "required": {
-        "type": "boolean"
-      }
-    }
-  },
   "models/job.schema.json":   {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://jobserver.example.io/schemas/models/job.schema.json",
@@ -154,6 +127,7 @@ export const schemaRegistry = {
       "job_id",
       "name",
       "status",
+      "depends_on",
       "created_at",
       "updated_at"
     ],
@@ -168,6 +142,14 @@ export const schemaRegistry = {
       },
       "status": {
         "$ref": "./common.schema.json#/$defs/jobStatus"
+      },
+      "depends_on": {
+        "type": "array",
+        "maxItems": 2000,
+        "uniqueItems": true,
+        "items": {
+          "$ref": "./common.schema.json#/$defs/jobId"
+        }
       },
       "created_at": {
         "$ref": "./common.schema.json#/$defs/timestamp"
@@ -263,37 +245,6 @@ export const schemaRegistry = {
       }
     }
   },
-  "rest/job-dependencies-response.schema.json":   {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://jobserver.example.io/schemas/rest/job-dependencies-response.schema.json",
-    "title": "Job Dependencies Response",
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "job_id",
-      "incoming",
-      "outgoing"
-    ],
-    "properties": {
-      "job_id": {
-        "$ref": "../models/common.schema.json#/$defs/jobId"
-      },
-      "incoming": {
-        "type": "array",
-        "maxItems": 2000,
-        "items": {
-          "$ref": "../models/dependency-edge.schema.json"
-        }
-      },
-      "outgoing": {
-        "type": "array",
-        "maxItems": 2000,
-        "items": {
-          "$ref": "../models/dependency-edge.schema.json"
-        }
-      }
-    }
-  },
   "rest/job-detail-response.schema.json":   {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://jobserver.example.io/schemas/rest/job-detail-response.schema.json",
@@ -320,6 +271,14 @@ export const schemaRegistry = {
           },
           "status": {
             "$ref": "../models/common.schema.json#/$defs/jobStatus"
+          },
+          "depends_on": {
+            "type": "array",
+            "maxItems": 2000,
+            "uniqueItems": true,
+            "items": {
+              "$ref": "../models/common.schema.json#/$defs/jobId"
+            }
           },
           "created_at": {
             "$ref": "../models/common.schema.json#/$defs/timestamp"
@@ -415,60 +374,6 @@ export const schemaRegistry = {
             "type": "null"
           }
         ]
-      }
-    }
-  },
-  "sse/dependency-updated-event.schema.json":   {
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://jobserver.example.io/schemas/sse/dependency-updated-event.schema.json",
-    "title": "SSE Job Dependency Updated Event",
-    "type": "object",
-    "additionalProperties": false,
-    "required": [
-      "event_id",
-      "event_type",
-      "schema_version",
-      "occurred_at",
-      "job_id",
-      "payload"
-    ],
-    "properties": {
-      "event_id": {
-        "$ref": "../models/common.schema.json#/$defs/eventId"
-      },
-      "event_type": {
-        "type": "string",
-        "const": "job.dependency.updated"
-      },
-      "schema_version": {
-        "$ref": "../models/common.schema.json#/$defs/schemaVersion"
-      },
-      "occurred_at": {
-        "$ref": "../models/common.schema.json#/$defs/timestamp"
-      },
-      "job_id": {
-        "$ref": "../models/common.schema.json#/$defs/jobId"
-      },
-      "payload": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "operation",
-          "edge"
-        ],
-        "properties": {
-          "operation": {
-            "type": "string",
-            "enum": [
-              "added",
-              "updated",
-              "removed"
-            ]
-          },
-          "edge": {
-            "$ref": "../models/dependency-edge.schema.json"
-          }
-        }
       }
     }
   },
@@ -658,8 +563,7 @@ export const schemaRegistry = {
         "additionalProperties": false,
         "required": [
           "job",
-          "tasks",
-          "dependencies"
+          "tasks"
         ],
         "properties": {
           "job": {
@@ -671,30 +575,6 @@ export const schemaRegistry = {
               "$ref": "../models/task.schema.json"
             },
             "maxItems": 5000
-          },
-          "dependencies": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "incoming",
-              "outgoing"
-            ],
-            "properties": {
-              "incoming": {
-                "type": "array",
-                "items": {
-                  "$ref": "../models/dependency-edge.schema.json"
-                },
-                "maxItems": 2000
-              },
-              "outgoing": {
-                "type": "array",
-                "items": {
-                  "$ref": "../models/dependency-edge.schema.json"
-                },
-                "maxItems": 2000
-              }
-            }
           }
         }
       }
@@ -713,9 +593,6 @@ export const schemaRegistry = {
       },
       {
         "$ref": "./task-updated-event.schema.json"
-      },
-      {
-        "$ref": "./dependency-updated-event.schema.json"
       },
       {
         "$ref": "./heartbeat-event.schema.json"
@@ -783,15 +660,12 @@ export const schemaRegistry = {
 export const schemaPaths = [
   "common/error.schema.json",
   "models/common.schema.json",
-  "models/dependency-edge.schema.json",
   "models/job.schema.json",
   "models/task.schema.json",
   "rest/health-response.schema.json",
-  "rest/job-dependencies-response.schema.json",
   "rest/job-detail-response.schema.json",
   "rest/job-tasks-response.schema.json",
   "rest/jobs-list-response.schema.json",
-  "sse/dependency-updated-event.schema.json",
   "sse/error-event.schema.json",
   "sse/heartbeat-event.schema.json",
   "sse/job-updated-event.schema.json",

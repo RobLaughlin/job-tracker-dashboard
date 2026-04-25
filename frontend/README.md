@@ -2,6 +2,16 @@
 
 React + TypeScript + Vite frontend for the Job Server contract.
 
+## Conformity Suite
+
+The app provides a live full conformity suite for Job Server validation:
+
+- enter Job Server URL + bearer token
+- run strict minimum + full REST/SSE checks
+- view live check state and event logs
+- see dashboard gate verdict (`ALLOWED` or `BLOCKED`)
+- switch among five built-in visual themes
+
 ## Setup
 
 ```bash

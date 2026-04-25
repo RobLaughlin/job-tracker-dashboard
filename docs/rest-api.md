@@ -64,6 +64,7 @@ Response `200`:
       "job_id": "job.import.001",
       "name": "Daily import",
       "status": "running",
+      "depends_on": ["job.prepare.001"],
       "created_at": "2026-04-25T10:00:00Z",
       "updated_at": "2026-04-25T10:02:00Z"
     }
@@ -85,6 +86,7 @@ Response `200`:
   "job_id": "job.import.001",
   "name": "Daily import",
   "status": "running",
+  "depends_on": ["job.prepare.001"],
   "dependency_mode": "all_of",
   "created_at": "2026-04-25T10:00:00Z",
   "updated_at": "2026-04-25T10:02:00Z",
@@ -139,28 +141,11 @@ Response `200`:
 }
 ```
 
-### GET /v1/jobs/{job_id}/dependencies
+Dependency model rules:
 
-Purpose:
-
-- Return dependency edges for one job (job-level only).
-
-Response `200`:
-
-```json
-{
-  "job_id": "job.import.001",
-  "incoming": [
-    {
-      "dependency_id": "dep.100",
-      "source_job_id": "job.prepare.001",
-      "target_job_id": "job.import.001",
-      "required": true
-    }
-  ],
-  "outgoing": []
-}
-```
+- `depends_on` is the canonical dependency representation.
+- Values contain upstream `job_id` values.
+- Array values must be unique and must not include the job's own `job_id`.
 
 ## Error Codes
 

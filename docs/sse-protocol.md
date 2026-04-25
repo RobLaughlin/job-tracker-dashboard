@@ -63,7 +63,6 @@ Rules:
 - `snapshot`
 - `job.updated`
 - `task.updated`
-- `job.dependency.updated`
 - `heartbeat`
 - `error`
 
@@ -71,7 +70,7 @@ Rules:
 
 Sent immediately after stream opens, before incremental updates.
 
-Payload should include the current job/task/dependency state within active filters.
+Payload should include the current job/task state within active filters.
 
 ### job.updated
 
@@ -80,10 +79,6 @@ Sent on any job state or metadata change.
 ### task.updated
 
 Sent on task status/progress change. Must include `task_id`, `required`, and `status`.
-
-### job.dependency.updated
-
-Sent when dependency edges are added/removed/changed.
 
 ### heartbeat
 

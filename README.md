@@ -18,6 +18,7 @@ The dashboard lets a user enter a Job Server URL (for example `http://localhost:
 - SSE model: one global stream endpoint (`GET /v1/stream`) with optional filters.
 - Schema strictness: strong validation, explicit enums, `additionalProperties: false`.
 - Job dependencies: job-to-job edges only in Phase 0.
+- Job dependencies use `depends_on` on each job object.
 
 ## Status Model
 
@@ -58,7 +59,7 @@ A server is considered valid if it:
 ## Frontend Integration Flow
 
 1. Validate user-provided base URL and token.
-2. Bootstrap state via REST (`/jobs`, `/jobs/{job_id}`, `/jobs/{job_id}/tasks`, `/jobs/{job_id}/dependencies`).
+2. Bootstrap state via REST (`/jobs`, `/jobs/{job_id}`, `/jobs/{job_id}/tasks`).
 3. Open SSE stream with `GET /v1/stream`.
 4. Apply strict runtime validation for each incoming event.
 5. Reconnect with backoff and `Last-Event-ID` on disconnect.
@@ -79,6 +80,7 @@ The React + TypeScript + Vite frontend lives in `frontend/`.
 
 - Start from `frontend/README.md` for setup and commands.
 - Generated frontend contract artifacts live in `frontend/src/generated/`.
+- The frontend includes a full conformity suite with strict minimum gating for dashboard connection.
 
 ## Git Hooks and Verification
 

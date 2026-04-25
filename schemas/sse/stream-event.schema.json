@@ -13,9 +13,6 @@
       "$ref": "./task-updated-event.schema.json"
     },
     {
-      "$ref": "./dependency-updated-event.schema.json"
-    },
-    {
       "$ref": "./heartbeat-event.schema.json"
     },
     {

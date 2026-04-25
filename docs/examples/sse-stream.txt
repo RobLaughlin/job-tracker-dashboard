@@ -1,6 +1,6 @@
 id: 01JSGYNF3R7W78B83G8GW84EE6
 event: snapshot
-data: {"event_id":"01JSGYNF3R7W78B83G8GW84EE6","event_type":"snapshot","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:00Z","job_id":"job.import.001","payload":{"job":{"job_id":"job.import.001","status":"running"},"tasks":[{"task_id":"fetch-source","required":true,"status":"running"}],"dependencies":{"incoming":[{"dependency_id":"dep.100","source_job_id":"job.prepare.001","target_job_id":"job.import.001","required":true}],"outgoing":[]}}}
+data: {"event_id":"01JSGYNF3R7W78B83G8GW84EE6","event_type":"snapshot","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:00Z","job_id":"job.import.001","payload":{"job":{"job_id":"job.import.001","name":"Daily import","status":"running","depends_on":["job.prepare.001"],"created_at":"2026-04-25T09:58:00Z","updated_at":"2026-04-25T10:00:00Z"},"tasks":[{"task_id":"fetch-source","name":"Fetch source","required":true,"status":"running","started_at":"2026-04-25T10:00:00Z","finished_at":null}]}}
 
 id: 01JSGYP5AT4M5053X90TT5X6YS
 event: task.updated

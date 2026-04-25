@@ -28,6 +28,7 @@ export type StreamOptions = {
   token: string;
   filter?: StreamFilter;
   signal?: AbortSignal;
+  initialLastEventId?: string;
   reconnectBaseDelayMs?: number;
   reconnectMaxDelayMs?: number;
 };
@@ -182,7 +183,7 @@ export function openValidatedEventStream(
   });
 
   const internalSignal = abortController.signal;
-  let lastEventId: string | undefined;
+  let lastEventId: string | undefined = options.initialLastEventId;
 
   const run = async () => {
     let reconnectAttempt = 0;

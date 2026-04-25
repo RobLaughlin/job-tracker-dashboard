@@ -175,50 +175,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/jobs/{job_id}/dependencies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List job dependency edges */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Job identifier. */
-                    job_id: components["parameters"]["JobIdPath"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Job dependency edges */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["job-dependencies-response.schema"];
-                    };
-                };
-                400: components["responses"]["BadRequest"];
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-                500: components["responses"]["InternalError"];
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/stream": {
         parameters: {
             query?: never;
@@ -310,6 +266,7 @@ export interface components {
             job_id: components["schemas"]["identifier"];
             name: string;
             status: components["schemas"]["jobStatus"];
+            depends_on: components["schemas"]["identifier"][];
             created_at: components["schemas"]["timestamp"];
             updated_at: components["schemas"]["timestamp"];
         };
@@ -323,6 +280,7 @@ export interface components {
             job_id?: components["schemas"]["identifier"];
             name?: string;
             status?: components["schemas"]["jobStatus"];
+            depends_on?: components["schemas"]["identifier"][];
             created_at?: components["schemas"]["timestamp"];
             updated_at?: components["schemas"]["timestamp"];
             /** @constant */
@@ -349,19 +307,6 @@ export interface components {
         "job-tasks-response.schema": {
             job_id: components["schemas"]["identifier"];
             items: components["schemas"]["task.schema"][];
-        };
-        /** Dependency Edge */
-        "dependency-edge.schema": {
-            dependency_id: components["schemas"]["identifier"];
-            source_job_id: components["schemas"]["identifier"];
-            target_job_id: components["schemas"]["identifier"];
-            required: boolean;
-        };
-        /** Job Dependencies Response */
-        "job-dependencies-response.schema": {
-            job_id: components["schemas"]["identifier"];
-            incoming: components["schemas"]["dependency-edge.schema"][];
-            outgoing: components["schemas"]["dependency-edge.schema"][];
         };
     };
     responses: {

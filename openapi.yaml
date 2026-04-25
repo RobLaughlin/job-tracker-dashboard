@@ -108,30 +108,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
-  /v1/jobs/{job_id}/dependencies:
-    get:
-      tags: [Jobs]
-      summary: List job dependency edges
-      parameters:
-        - $ref: "#/components/parameters/JobIdPath"
-      responses:
-        "200":
-          description: Job dependency edges
-          content:
-            application/json:
-              schema:
-                $ref: ./schemas/rest/job-dependencies-response.schema.json
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        "404":
-          $ref: "#/components/responses/NotFound"
-        "500":
-          $ref: "#/components/responses/InternalError"
-
   /v1/stream:
     get:
       tags: [Stream]

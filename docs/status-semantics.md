@@ -79,7 +79,7 @@ Notes:
 
 ## Dependency Gate
 
-Jobs with required upstream dependencies must not enter `running` until dependency policy is satisfied.
+Jobs with required upstream dependencies in `depends_on` must not enter `running` until dependency policy is satisfied.
 
 Recommended dependency mode for Phase 0:
 

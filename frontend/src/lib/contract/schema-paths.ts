@@ -5,7 +5,6 @@ export const REST_SCHEMA_PATHS = {
   jobsListResponse: "rest/jobs-list-response.schema.json",
   jobDetailResponse: "rest/job-detail-response.schema.json",
   jobTasksResponse: "rest/job-tasks-response.schema.json",
-  jobDependenciesResponse: "rest/job-dependencies-response.schema.json",
   errorResponse: "common/error.schema.json",
 } as const satisfies Record<string, SchemaPath>;
 

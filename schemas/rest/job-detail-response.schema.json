@@ -22,6 +22,14 @@
         "status": {
           "$ref": "../models/common.schema.json#/$defs/jobStatus"
         },
+        "depends_on": {
+          "type": "array",
+          "maxItems": 2000,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "../models/common.schema.json#/$defs/jobId"
+          }
+        },
         "created_at": {
           "$ref": "../models/common.schema.json#/$defs/timestamp"
         },

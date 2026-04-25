@@ -40,7 +40,7 @@ This document defines Phase 0 behavior for a compliant Job Server.
 
 ## IDs and Timestamps
 
-- `job_id`, `task_id`, `dependency_id`: non-empty, max length 128, regex `^[A-Za-z0-9._:-]+$`
+- `job_id`, `task_id`: non-empty, max length 128, regex `^[A-Za-z0-9._:-]+$`
 - `event_id`: UUIDv7 or ULID string
 - `occurred_at`, `created_at`, `updated_at`: RFC3339 UTC timestamp
 

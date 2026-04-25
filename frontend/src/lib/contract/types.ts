@@ -10,8 +10,6 @@ export type JobDetailResponse =
   components["schemas"]["job-detail-response.schema"];
 export type JobTasksResponse =
   components["schemas"]["job-tasks-response.schema"];
-export type JobDependenciesResponse =
-  components["schemas"]["job-dependencies-response.schema"];
 export type ErrorResponse = components["schemas"]["error.schema"];
 
 export type SnapshotEvent = {
@@ -23,10 +21,6 @@ export type SnapshotEvent = {
   payload: {
     job: components["schemas"]["job.schema"];
     tasks: components["schemas"]["task.schema"][];
-    dependencies: {
-      incoming: components["schemas"]["dependency-edge.schema"][];
-      outgoing: components["schemas"]["dependency-edge.schema"][];
-    };
   };
 };
 
@@ -51,18 +45,6 @@ export type TaskUpdatedEvent = {
     task_id: string;
     required: boolean;
     status: TaskStatus;
-  };
-};
-
-export type DependencyUpdatedEvent = {
-  event_id: string;
-  event_type: "job.dependency.updated";
-  schema_version: "1.0.0";
-  occurred_at: string;
-  job_id: string;
-  payload: {
-    operation: "added" | "updated" | "removed";
-    edge: components["schemas"]["dependency-edge.schema"];
   };
 };
 
@@ -94,6 +76,5 @@ export type StreamEvent =
   | SnapshotEvent
   | JobUpdatedEvent
   | TaskUpdatedEvent
-  | DependencyUpdatedEvent
   | HeartbeatEvent
   | StreamErrorEvent;

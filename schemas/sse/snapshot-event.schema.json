@@ -32,7 +32,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["job", "tasks", "dependencies"],
+      "required": ["job", "tasks"],
       "properties": {
         "job": {
           "$ref": "../models/job.schema.json"
@@ -43,27 +43,6 @@
             "$ref": "../models/task.schema.json"
           },
           "maxItems": 5000
-        },
-        "dependencies": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["incoming", "outgoing"],
-          "properties": {
-            "incoming": {
-              "type": "array",
-              "items": {
-                "$ref": "../models/dependency-edge.schema.json"
-              },
-              "maxItems": 2000
-            },
-            "outgoing": {
-              "type": "array",
-              "items": {
-                "$ref": "../models/dependency-edge.schema.json"
-              },
-              "maxItems": 2000
-            }
-          }
         }
       }
     }
