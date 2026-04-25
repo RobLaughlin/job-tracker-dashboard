@@ -1,4 +1,8 @@
 import { createJobServerClient } from "../contract/client";
+import {
+  ContractValidationError,
+  JobServerHttpError,
+} from "../contract/errors";
 import type { JobStatus } from "../contract/types";
 
 export type CheckState =
@@ -308,6 +312,7 @@ export async function runConformitySuite(
   let sampledJobId: string | undefined;
   let sampledJobList: JobNode[] = [];
   let capturedEventId = "bootstrap";
+  let jobsListCheckPassed = false;
 
   const runCheck = async (id: string, handler: () => Promise<string>) => {
     ensureNotAborted(config.signal);
@@ -317,7 +322,18 @@ export async function runConformitySuite(
       setCheckState(id, "passed", detail);
       log("info", `${id}: ${detail}`);
     } catch (error) {
-      const detail = error instanceof Error ? error.message : "Unknown error";
+      let detail = error instanceof Error ? error.message : "Unknown error";
+
+      if (error instanceof ContractValidationError) {
+        const evidence = error.validationErrors.slice(0, 2).join("; ");
+        detail = evidence ? `${error.message} (${evidence})` : error.message;
+      } else if (error instanceof JobServerHttpError) {
+        const apiMessage = error.details?.error?.message;
+        detail = apiMessage
+          ? `${error.message} (${apiMessage})`
+          : error.message;
+      }
+
       setCheckState(id, "failed", detail);
       log("error", `${id}: ${detail}`);
     }
@@ -340,10 +356,30 @@ export async function runConformitySuite(
       depends_on: [...job.depends_on],
     }));
     sampledJobId = jobs.items.at(0)?.job_id;
+    jobsListCheckPassed = true;
     return `Fetched ${jobs.items.length} jobs from /v1/jobs.`;
   });
 
-  if (!sampledJobId) {
+  if (!jobsListCheckPassed) {
+    const detail = "Skipped because /v1/jobs check failed.";
+    checks = updateCheck(checks, "job-detail", {
+      state: "failed",
+      detail,
+      endedAt: Date.now(),
+    });
+    checks = updateCheck(checks, "job-tasks", {
+      state: "failed",
+      detail,
+      endedAt: Date.now(),
+    });
+    checks = updateCheck(checks, "depends-on-graph", {
+      state: "failed",
+      detail,
+      endedAt: Date.now(),
+    });
+    config.onChecks(checks);
+    log("error", "Dependent checks failed because /v1/jobs did not pass.");
+  } else if (!sampledJobId) {
     checks = updateCheck(checks, "job-detail", {
       state: "skipped",
       detail: "Skipped because the server returned zero jobs.",
@@ -367,25 +403,27 @@ export async function runConformitySuite(
     });
   }
 
-  await runCheck("depends-on-graph", async () => {
-    const invalidSelf = sampledJobList.filter((job) =>
-      job.depends_on.includes(job.job_id),
-    );
-    if (invalidSelf.length > 0) {
-      throw new Error(
-        `Self dependency detected for ${invalidSelf.map((job) => job.job_id).join(", ")}.`,
+  if (jobsListCheckPassed) {
+    await runCheck("depends-on-graph", async () => {
+      const invalidSelf = sampledJobList.filter((job) =>
+        job.depends_on.includes(job.job_id),
       );
-    }
+      if (invalidSelf.length > 0) {
+        throw new Error(
+          `Self dependency detected for ${invalidSelf.map((job) => job.job_id).join(", ")}.`,
+        );
+      }
 
-    const sorted = topoSortJobs(sampledJobList);
-    if (sorted.cyclic.length > 0) {
-      throw new Error(
-        `Dependency cycle detected for ${sorted.cyclic.join(", ")}.`,
-      );
-    }
+      const sorted = topoSortJobs(sampledJobList);
+      if (sorted.cyclic.length > 0) {
+        throw new Error(
+          `Dependency cycle detected for ${sorted.cyclic.join(", ")}.`,
+        );
+      }
 
-    return `Graph sorted across ${sorted.order.length} sampled jobs with no cycles.`;
-  });
+      return `Graph sorted across ${sorted.order.length} sampled jobs with no cycles.`;
+    });
+  }
 
   await runCheck("status-filter", async () => {
     const filtered = await client.listJobs({

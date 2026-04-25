@@ -25,6 +25,17 @@ This document defines Phase 0 behavior for a compliant Job Server.
   - `jobs:read` for REST resources
   - `stream:read` for SSE
 
+## Browser Interoperability (CORS)
+
+For browser-based clients on a different origin than the Job Server, servers must:
+
+- Handle `OPTIONS` preflight for contract endpoints.
+- Include `Access-Control-Allow-Origin` for allowed origins.
+- Include `Access-Control-Allow-Headers` with at least `Authorization`, `Content-Type`, and `Last-Event-ID`.
+- Include `Access-Control-Allow-Methods` with at least `GET`, `OPTIONS`.
+
+In production, use an allowlist and avoid wildcard origins for authenticated endpoints.
+
 ## Versioning and Compatibility
 
 - Major contract version is represented by the URL prefix (`/v1`).

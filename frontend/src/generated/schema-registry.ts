@@ -249,78 +249,77 @@ export const schemaRegistry = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://jobserver.example.io/schemas/rest/job-detail-response.schema.json",
     "title": "Job Detail Response",
-    "allOf": [
-      {
-        "$ref": "../models/job.schema.json"
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "job_id",
+      "name",
+      "status",
+      "depends_on",
+      "created_at",
+      "updated_at",
+      "dependency_mode",
+      "required_task_summary"
+    ],
+    "properties": {
+      "job_id": {
+        "$ref": "../models/common.schema.json#/$defs/jobId"
       },
-      {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      },
+      "status": {
+        "$ref": "../models/common.schema.json#/$defs/jobStatus"
+      },
+      "depends_on": {
+        "type": "array",
+        "maxItems": 2000,
+        "uniqueItems": true,
+        "items": {
+          "$ref": "../models/common.schema.json#/$defs/jobId"
+        }
+      },
+      "created_at": {
+        "$ref": "../models/common.schema.json#/$defs/timestamp"
+      },
+      "updated_at": {
+        "$ref": "../models/common.schema.json#/$defs/timestamp"
+      },
+      "dependency_mode": {
+        "type": "string",
+        "const": "all_of"
+      },
+      "required_task_summary": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "dependency_mode",
-          "required_task_summary"
+          "total",
+          "succeeded",
+          "failed",
+          "cancelled"
         ],
         "properties": {
-          "job_id": {
-            "$ref": "../models/common.schema.json#/$defs/jobId"
+          "total": {
+            "type": "integer",
+            "minimum": 0
           },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 256
+          "succeeded": {
+            "type": "integer",
+            "minimum": 0
           },
-          "status": {
-            "$ref": "../models/common.schema.json#/$defs/jobStatus"
+          "failed": {
+            "type": "integer",
+            "minimum": 0
           },
-          "depends_on": {
-            "type": "array",
-            "maxItems": 2000,
-            "uniqueItems": true,
-            "items": {
-              "$ref": "../models/common.schema.json#/$defs/jobId"
-            }
-          },
-          "created_at": {
-            "$ref": "../models/common.schema.json#/$defs/timestamp"
-          },
-          "updated_at": {
-            "$ref": "../models/common.schema.json#/$defs/timestamp"
-          },
-          "dependency_mode": {
-            "type": "string",
-            "const": "all_of"
-          },
-          "required_task_summary": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "total",
-              "succeeded",
-              "failed",
-              "cancelled"
-            ],
-            "properties": {
-              "total": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "succeeded": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "failed": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "cancelled": {
-                "type": "integer",
-                "minimum": 0
-              }
-            }
+          "cancelled": {
+            "type": "integer",
+            "minimum": 0
           }
         }
       }
-    ]
+    }
   },
   "rest/job-tasks-response.schema.json":   {
     "$schema": "https://json-schema.org/draft/2020-12/schema",

@@ -68,7 +68,8 @@ describe("minimal job server example", () => {
   const minimalServer = createMinimalJobServer({
     token,
     heartbeatMs: 1_000,
-    simulationMs: 2_000,
+    tickMs: 250,
+    taskRuntimeMs: 350,
   });
 
   let baseUrl = "";
@@ -114,6 +115,71 @@ describe("minimal job server example", () => {
     expect(detail.body.required_task_summary).toBeDefined();
   });
 
+  it("returns 400 for unsupported status filter values", async () => {
+    const response = await request(minimalServer.app)
+      .get("/v1/jobs?status=unknown")
+      .set("Authorization", `Bearer ${token}`)
+      .set("Accept", "application/json");
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("validation_error");
+  });
+
+  it("supports CORS preflight and CORS headers for browser clients", async () => {
+    const preflight = await request(minimalServer.app)
+      .options("/v1/jobs")
+      .set("Origin", "http://localhost:5173")
+      .set("Access-Control-Request-Method", "GET")
+      .set("Access-Control-Request-Headers", "authorization,last-event-id");
+
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:5173",
+    );
+    expect(preflight.headers["access-control-allow-methods"]).toContain("GET");
+    expect(preflight.headers["access-control-allow-headers"]).toContain(
+      "Last-Event-ID",
+    );
+
+    const list = await request(minimalServer.app)
+      .get("/v1/jobs")
+      .set("Origin", "http://localhost:5173")
+      .set("Authorization", `Bearer ${token}`)
+      .set("Accept", "application/json");
+
+    expect(list.status).toBe(200);
+    expect(list.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:5173",
+    );
+  });
+
+  it("progresses jobs through a realistic lifecycle", async () => {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 2_000);
+    });
+
+    const list = await request(minimalServer.app)
+      .get("/v1/jobs")
+      .set("Authorization", `Bearer ${token}`)
+      .set("Accept", "application/json");
+
+    expect(list.status).toBe(200);
+    expect(list.body.items.some((job) => job.status === "succeeded")).toBe(
+      true,
+    );
+
+    const reportJob = list.body.items.find(
+      (job) => job.job_id === "job.report.001",
+    );
+    expect(reportJob).toBeDefined();
+    expect([
+      "waiting_dependency",
+      "running",
+      "succeeded",
+      "completed",
+    ]).toContain(reportJob.status);
+  });
+
   it("streams snapshot and heartbeat events and accepts Last-Event-ID", async () => {
     const response = await fetch(`${baseUrl}/v1/stream`, {
       headers: {
@@ -139,6 +205,8 @@ describe("minimal job server example", () => {
     expect(heartbeat).toBeDefined();
     expect(snapshot.data.event_type).toBe("snapshot");
     expect(heartbeat.data.event_type).toBe("heartbeat");
+    expect(snapshot.data.payload.job.depends_on).toBeDefined();
+    expect(Array.isArray(snapshot.data.payload.tasks)).toBe(true);
 
     const resumeResponse = await fetch(`${baseUrl}/v1/stream`, {
       headers: {

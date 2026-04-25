@@ -29,6 +29,27 @@ describe("contract validators", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("accepts a valid job detail response", () => {
+    const payload = {
+      job_id: "job.import.001",
+      name: "Daily import",
+      status: "running",
+      depends_on: ["job.prepare.001"],
+      created_at: "2026-04-25T10:00:00Z",
+      updated_at: "2026-04-25T10:02:00Z",
+      dependency_mode: "all_of",
+      required_task_summary: {
+        total: 2,
+        succeeded: 1,
+        failed: 0,
+        cancelled: 0,
+      },
+    };
+
+    const result = validateSchema(REST_SCHEMA_PATHS.jobDetailResponse, payload);
+    expect(result.ok).toBe(true);
+  });
+
   it("accepts a valid SSE task.updated event envelope", () => {
     const payload = {
       event_id: "01JSGYP5AT4M5053X90TT5X6YS",

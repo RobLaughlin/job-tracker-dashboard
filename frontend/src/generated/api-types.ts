@@ -276,13 +276,13 @@ export interface components {
             next_cursor: string | null;
         };
         /** Job Detail Response */
-        "job-detail-response.schema": components["schemas"]["job.schema"] & {
-            job_id?: components["schemas"]["identifier"];
-            name?: string;
-            status?: components["schemas"]["jobStatus"];
-            depends_on?: components["schemas"]["identifier"][];
-            created_at?: components["schemas"]["timestamp"];
-            updated_at?: components["schemas"]["timestamp"];
+        "job-detail-response.schema": {
+            job_id: components["schemas"]["identifier"];
+            name: string;
+            status: components["schemas"]["jobStatus"];
+            depends_on: components["schemas"]["identifier"][];
+            created_at: components["schemas"]["timestamp"];
+            updated_at: components["schemas"]["timestamp"];
             /** @constant */
             dependency_mode: "all_of";
             required_task_summary: {

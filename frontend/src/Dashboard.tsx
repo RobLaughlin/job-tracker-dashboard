@@ -408,6 +408,82 @@ const ErrorNote = styled.p`
   font-size: 12px;
 `;
 
+const DiagnosticsCard = styled(Card)`
+  display: grid;
+  gap: 0.7rem;
+`;
+
+const DiagnosticsList = styled.div`
+  display: grid;
+  gap: 0.45rem;
+`;
+
+const DiagnosticRow = styled.div`
+  border: 1px solid ${palette.border};
+  border-radius: 8px;
+  background: ${palette.shell};
+  padding: 0.6rem 0.7rem;
+  display: grid;
+  gap: 0.25rem;
+`;
+
+const DiagnosticHead = styled.div`
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+`;
+
+const DiagnosticLabel = styled.strong`
+  color: ${palette.text};
+  font-size: 12px;
+  font-weight: 500;
+`;
+
+const DiagnosticCategory = styled.span`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  color: ${palette.subdued};
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+`;
+
+const DiagnosticMessage = styled.p`
+  margin: 0;
+  color: ${palette.subdued};
+  font-size: 12px;
+  line-height: 1.45;
+`;
+
+function classifyDiagnostic(message: string) {
+  const text = message.toLowerCase();
+  if (
+    text.includes("cors") ||
+    text.includes("preflight") ||
+    text.includes("origin")
+  ) {
+    return "cors/network";
+  }
+  if (
+    text.includes("401") ||
+    text.includes("403") ||
+    text.includes("unauthorized") ||
+    text.includes("token")
+  ) {
+    return "auth";
+  }
+  if (text.includes("schema") || text.includes("validation")) {
+    return "schema";
+  }
+  if (text.includes("timeout")) {
+    return "timeout";
+  }
+  if (text.includes("abort") || text.includes("cancel")) {
+    return "cancelled";
+  }
+  return "server";
+}
+
 function StreamGlyph() {
   return (
     <svg
@@ -471,6 +547,26 @@ export default function Dashboard() {
   const totalChecks = checks.length;
   const conformityPercent =
     totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
+
+  const diagnostics = useMemo(() => {
+    const rows = checks
+      .filter((check) => check.state === "failed")
+      .map((check) => ({
+        label: check.title,
+        category: classifyDiagnostic(check.detail),
+        message: check.detail,
+      }));
+
+    if (runError) {
+      rows.unshift({
+        label: "Run error",
+        category: classifyDiagnostic(runError),
+        message: runError,
+      });
+    }
+
+    return rows;
+  }, [checks, runError]);
 
   const minimumLabel = useMemo(() => {
     if (running) {
@@ -693,6 +789,38 @@ export default function Dashboard() {
             </ScoreItem>
           </ScoreGrid>
         </ScoreCard>
+
+        <DiagnosticsCard>
+          <CardHead>
+            <CardTitle>Connection Diagnostics</CardTitle>
+            <CardCount>{diagnostics.length} issues</CardCount>
+          </CardHead>
+          {diagnostics.length === 0 ? (
+            <Empty>
+              <EmptyTitle>No connection issues detected</EmptyTitle>
+              <EmptyHint>
+                Diagnostics will list likely causes when checks fail (auth,
+                CORS/network, schema, timeout, or server).
+              </EmptyHint>
+            </Empty>
+          ) : (
+            <DiagnosticsList>
+              {diagnostics.map((diagnostic, index) => (
+                <DiagnosticRow
+                  key={`${diagnostic.label}-${diagnostic.category}-${index}`}
+                >
+                  <DiagnosticHead>
+                    <DiagnosticLabel>{diagnostic.label}</DiagnosticLabel>
+                    <DiagnosticCategory>
+                      {diagnostic.category}
+                    </DiagnosticCategory>
+                  </DiagnosticHead>
+                  <DiagnosticMessage>{diagnostic.message}</DiagnosticMessage>
+                </DiagnosticRow>
+              ))}
+            </DiagnosticsList>
+          )}
+        </DiagnosticsCard>
       </Container>
     </Page>
   );

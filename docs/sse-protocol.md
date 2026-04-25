@@ -122,3 +122,4 @@ Strictness:
 - Enforce per-token/per-IP stream limits.
 - Return `401`/`403` on auth failures.
 - Prefer immediate close on expired token.
+- Support CORS preflight for browser clients and allow `Last-Event-ID` in `Access-Control-Allow-Headers`.
