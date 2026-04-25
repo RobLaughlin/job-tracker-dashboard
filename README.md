@@ -79,3 +79,28 @@ The React + TypeScript + Vite frontend lives in `frontend/`.
 
 - Start from `frontend/README.md` for setup and commands.
 - Generated frontend contract artifacts live in `frontend/src/generated/`.
+
+## Git Hooks and Verification
+
+Husky hooks are configured at repository root.
+
+- `pre-commit` runs `npm run verify:precommit`
+- `pre-push` runs `npm run verify:prepush`
+
+Hook command behavior:
+
+- `verify:precommit` runs generated-artifact checks, TypeScript syntax/type checks, lint checks, and Prettier style checks.
+- `verify:prepush` runs all pre-commit checks plus unit tests.
+
+You can run these manually from repo root:
+
+- `npm run verify:precommit`
+- `npm run verify:prepush`
+
+## Contract Update Expectations
+
+When `openapi.yaml` or files under `schemas/` change:
+
+- Regenerate frontend artifacts with `npm --prefix frontend run generate`.
+- Add/update unit tests when behavior changes.
+- Update contract documentation (`README.md`, `docs/*.md`, `frontend/README.md`) so implementation and docs stay aligned.

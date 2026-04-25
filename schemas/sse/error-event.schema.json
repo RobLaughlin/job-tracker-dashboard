@@ -32,11 +32,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "code",
-        "message",
-        "recoverable"
-      ],
+      "required": ["code", "message", "recoverable"],
       "properties": {
         "code": {
           "type": "string",

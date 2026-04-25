@@ -1,6 +1,6 @@
-import styled from 'styled-components'
-import { createGlobalStyle } from 'styled-components'
-import { schemaPaths } from './generated/schema-registry'
+import styled from "styled-components";
+import { createGlobalStyle } from "styled-components";
+import { schemaPaths } from "./generated/schema-registry";
 
 const GlobalStyle = createGlobalStyle`
   :root {
@@ -18,7 +18,7 @@ const GlobalStyle = createGlobalStyle`
     min-height: 100vh;
     background: radial-gradient(circle at top right, #d7e7ff 0%, #f5f7fb 40%, #eef3fa 100%);
   }
-`
+`;
 
 const Page = styled.main`
   width: min(920px, calc(100% - 2rem));
@@ -28,20 +28,20 @@ const Page = styled.main`
   border-radius: 20px;
   background: linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
   box-shadow: 0 24px 56px rgba(17, 40, 79, 0.12);
-`
+`;
 
 const Heading = styled.h1`
   margin: 0;
   color: #0b2b52;
   font-size: clamp(1.75rem, 1.3rem + 1.2vw, 2.5rem);
   letter-spacing: -0.02em;
-`
+`;
 
 const Description = styled.p`
   margin: 1rem 0 1.5rem;
   color: #405670;
   line-height: 1.55;
-`
+`;
 
 const StatGrid = styled.section`
   display: grid;
@@ -51,14 +51,14 @@ const StatGrid = styled.section`
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
   }
-`
+`;
 
 const Stat = styled.article`
   border: 1px solid #d5deed;
   border-radius: 14px;
   padding: 1rem;
   background: #ffffff;
-`
+`;
 
 const Label = styled.p`
   margin: 0;
@@ -66,14 +66,14 @@ const Label = styled.p`
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-`
+`;
 
 const Value = styled.p`
   margin: 0.5rem 0 0;
   color: #102c4d;
   font-weight: 700;
   font-size: 1.6rem;
-`
+`;
 
 const Code = styled.code`
   font-family: "JetBrains Mono", "Consolas", monospace;
@@ -82,7 +82,7 @@ const Code = styled.code`
   background: #eaf1ff;
   border-radius: 6px;
   color: #16457a;
-`
+`;
 
 function App() {
   return (
@@ -91,8 +91,9 @@ function App() {
       <Page>
         <Heading>Job Dashboard Frontend</Heading>
         <Description>
-          Vite + React + TypeScript + styled-components are configured. Contract-driven types and JSON
-          schema validator artifacts generate from <Code>../openapi.yaml</Code> and <Code>../schemas</Code>.
+          Vite + React + TypeScript + styled-components are configured.
+          Contract-driven types and JSON schema validator artifacts generate
+          from <Code>../openapi.yaml</Code> and <Code>../schemas</Code>.
         </Description>
 
         <StatGrid>
@@ -111,7 +112,7 @@ function App() {
         </StatGrid>
       </Page>
     </>
-  )
+  );
 }
 
-export default App
+export default App;

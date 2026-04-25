@@ -32,9 +32,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "status"
-      ],
+      "required": ["status"],
       "properties": {
         "status": {
           "$ref": "../models/common.schema.json#/$defs/jobStatus"

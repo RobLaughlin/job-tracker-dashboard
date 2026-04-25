@@ -32,9 +32,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "interval_seconds"
-      ],
+      "required": ["interval_seconds"],
       "properties": {
         "interval_seconds": {
           "type": "integer",

@@ -4,11 +4,7 @@
   "title": "Job Dependencies Response",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "job_id",
-    "incoming",
-    "outgoing"
-  ],
+  "required": ["job_id", "incoming", "outgoing"],
   "properties": {
     "job_id": {
       "$ref": "../models/common.schema.json#/$defs/jobId"

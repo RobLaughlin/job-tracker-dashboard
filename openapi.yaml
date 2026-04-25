@@ -25,112 +25,112 @@ paths:
       summary: Read service and contract health
       security: []
       responses:
-        '200':
+        "200":
           description: Service health
           content:
             application/json:
               schema:
                 $ref: ./schemas/rest/health-response.schema.json
-        '500':
-          $ref: '#/components/responses/InternalError'
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/jobs:
     get:
       tags: [Jobs]
       summary: List jobs
       parameters:
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Cursor'
-        - $ref: '#/components/parameters/JobStatus'
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/JobStatus"
       responses:
-        '200':
+        "200":
           description: Paginated jobs
           content:
             application/json:
               schema:
                 $ref: ./schemas/rest/jobs-list-response.schema.json
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-        '500':
-          $ref: '#/components/responses/InternalError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/jobs/{job_id}:
     get:
       tags: [Jobs]
       summary: Read job details
       parameters:
-        - $ref: '#/components/parameters/JobIdPath'
+        - $ref: "#/components/parameters/JobIdPath"
       responses:
-        '200':
+        "200":
           description: Job details
           content:
             application/json:
               schema:
                 $ref: ./schemas/rest/job-detail-response.schema.json
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/jobs/{job_id}/tasks:
     get:
       tags: [Jobs]
       summary: List tasks for a job
       parameters:
-        - $ref: '#/components/parameters/JobIdPath'
+        - $ref: "#/components/parameters/JobIdPath"
       responses:
-        '200':
+        "200":
           description: Tasks for a job
           content:
             application/json:
               schema:
                 $ref: ./schemas/rest/job-tasks-response.schema.json
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/jobs/{job_id}/dependencies:
     get:
       tags: [Jobs]
       summary: List job dependency edges
       parameters:
-        - $ref: '#/components/parameters/JobIdPath'
+        - $ref: "#/components/parameters/JobIdPath"
       responses:
-        '200':
+        "200":
           description: Job dependency edges
           content:
             application/json:
               schema:
                 $ref: ./schemas/rest/job-dependencies-response.schema.json
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /v1/stream:
     get:
@@ -140,10 +140,10 @@ paths:
         Opens a long-lived SSE connection.
         Clients should reconnect with backoff and send Last-Event-ID when available.
       parameters:
-        - $ref: '#/components/parameters/JobIdFilter'
-        - $ref: '#/components/parameters/JobStatus'
+        - $ref: "#/components/parameters/JobIdFilter"
+        - $ref: "#/components/parameters/JobStatus"
       responses:
-        '200':
+        "200":
           description: Event stream
           headers:
             Cache-Control:
@@ -166,16 +166,16 @@ paths:
                     event: task.updated
                     data: {"event_id":"01JSGYP5AT4M5053X90TT5X6YS","event_type":"task.updated","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:20Z","job_id":"job.import.001","payload":{"task_id":"fetch-source","required":true,"status":"succeeded"}}
 
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-        '500':
-          $ref: '#/components/responses/InternalError'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
 components:
   securitySchemes:

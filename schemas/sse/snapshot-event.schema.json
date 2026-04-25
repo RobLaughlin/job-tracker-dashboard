@@ -32,11 +32,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "job",
-        "tasks",
-        "dependencies"
-      ],
+      "required": ["job", "tasks", "dependencies"],
       "properties": {
         "job": {
           "$ref": "../models/job.schema.json"
@@ -51,10 +47,7 @@
         "dependencies": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "incoming",
-            "outgoing"
-          ],
+          "required": ["incoming", "outgoing"],
           "properties": {
             "incoming": {
               "type": "array",

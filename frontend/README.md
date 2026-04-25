@@ -28,6 +28,8 @@ Commands:
 - `npm run generate:validators`
 - `npm run generate`
 - `npm run check:generated`
+- `npm run verify:precommit`
+- `npm run verify:prepush`
 
 Generated output:
 
@@ -46,6 +48,8 @@ Main entrypoint exports are re-exported from `src/lib/contract/index.ts`.
 ## Verification
 
 ```bash
+npm run verify:precommit
+npm run verify:prepush
 npm run lint
 npm run test
 npm run build

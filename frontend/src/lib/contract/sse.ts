@@ -1,130 +1,139 @@
-import { SSE_SCHEMA_PATHS, REST_SCHEMA_PATHS } from './schema-paths'
-import { ContractValidationError, JobServerHttpError } from './errors'
-import type { ErrorResponse, JobStatus, StreamEvent } from './types'
-import { validateSchema, validateSseEvent } from './validators'
+import { SSE_SCHEMA_PATHS, REST_SCHEMA_PATHS } from "./schema-paths";
+import { ContractValidationError, JobServerHttpError } from "./errors";
+import type { ErrorResponse, JobStatus, StreamEvent } from "./types";
+import { validateSchema, validateSseEvent } from "./validators";
 
-const textDecoder = new TextDecoder()
+const textDecoder = new TextDecoder();
 
 export type SseFrame = {
-  id?: string
-  event?: string
-  data?: string
-}
+  id?: string;
+  event?: string;
+  data?: string;
+};
 
 export type StreamFilter = {
-  jobIds?: string[]
-  statuses?: JobStatus[]
-}
+  jobIds?: string[];
+  statuses?: JobStatus[];
+};
 
 export type StreamHandlers = {
-  onOpen?: () => void
-  onEvent: (event: StreamEvent, frame: SseFrame) => void
-  onError?: (error: unknown) => void
-  onClose?: () => void
-}
+  onOpen?: () => void;
+  onEvent: (event: StreamEvent, frame: SseFrame) => void;
+  onError?: (error: unknown) => void;
+  onClose?: () => void;
+};
 
 export type StreamOptions = {
-  baseUrl: string
-  token: string
-  filter?: StreamFilter
-  signal?: AbortSignal
-  reconnectBaseDelayMs?: number
-  reconnectMaxDelayMs?: number
-}
+  baseUrl: string;
+  token: string;
+  filter?: StreamFilter;
+  signal?: AbortSignal;
+  reconnectBaseDelayMs?: number;
+  reconnectMaxDelayMs?: number;
+};
 
 function normalizeBaseUrl(baseUrl: string) {
-  return baseUrl.replace(/\/+$/, '')
+  return baseUrl.replace(/\/+$/, "");
 }
 
 function buildStreamUrl(baseUrl: string, filter?: StreamFilter) {
-  const url = new URL(`${normalizeBaseUrl(baseUrl)}/v1/stream`)
+  const url = new URL(`${normalizeBaseUrl(baseUrl)}/v1/stream`);
 
   for (const jobId of filter?.jobIds ?? []) {
-    url.searchParams.append('job_id', jobId)
+    url.searchParams.append("job_id", jobId);
   }
 
   for (const status of filter?.statuses ?? []) {
-    url.searchParams.append('status', status)
+    url.searchParams.append("status", status);
   }
 
-  return url
+  return url;
 }
 
 function delay(ms: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
-    const timeout = setTimeout(resolve, ms)
+    const timeout = setTimeout(resolve, ms);
 
     signal?.addEventListener(
-      'abort',
+      "abort",
       () => {
-        clearTimeout(timeout)
-        reject(new DOMException('Aborted', 'AbortError'))
+        clearTimeout(timeout);
+        reject(new DOMException("Aborted", "AbortError"));
       },
       { once: true },
-    )
-  })
+    );
+  });
 }
 
 function parseFrame(rawFrame: string): SseFrame | null {
-  const lines = rawFrame.split('\n')
-  const frame: SseFrame = {}
-  const dataLines: string[] = []
+  const lines = rawFrame.split("\n");
+  const frame: SseFrame = {};
+  const dataLines: string[] = [];
 
   for (const rawLine of lines) {
-    const line = rawLine.trimEnd()
-    if (!line || line.startsWith(':')) {
-      continue
+    const line = rawLine.trimEnd();
+    if (!line || line.startsWith(":")) {
+      continue;
     }
 
-    const separatorIndex = line.indexOf(':')
-    const field = separatorIndex === -1 ? line : line.slice(0, separatorIndex)
-    const value = separatorIndex === -1 ? '' : line.slice(separatorIndex + 1).trimStart()
+    const separatorIndex = line.indexOf(":");
+    const field = separatorIndex === -1 ? line : line.slice(0, separatorIndex);
+    const value =
+      separatorIndex === -1 ? "" : line.slice(separatorIndex + 1).trimStart();
 
-    if (field === 'id') {
-      frame.id = value
-    } else if (field === 'event') {
-      frame.event = value
-    } else if (field === 'data') {
-      dataLines.push(value)
+    if (field === "id") {
+      frame.id = value;
+    } else if (field === "event") {
+      frame.event = value;
+    } else if (field === "data") {
+      dataLines.push(value);
     }
   }
 
   if (dataLines.length > 0) {
-    frame.data = dataLines.join('\n')
+    frame.data = dataLines.join("\n");
   }
 
   if (!frame.id && !frame.event && !frame.data) {
-    return null
+    return null;
   }
 
-  return frame
+  return frame;
 }
 
-export function parseSseChunk(buffer: string): { frames: SseFrame[]; remainder: string } {
-  const normalized = buffer.replace(/\r\n/g, '\n')
-  const chunks = normalized.split('\n\n')
-  const remainder = chunks.pop() ?? ''
-  const frames: SseFrame[] = []
+export function parseSseChunk(buffer: string): {
+  frames: SseFrame[];
+  remainder: string;
+} {
+  const normalized = buffer.replace(/\r\n/g, "\n");
+  const chunks = normalized.split("\n\n");
+  const remainder = chunks.pop() ?? "";
+  const frames: SseFrame[] = [];
 
   for (const rawFrame of chunks) {
-    const parsed = parseFrame(rawFrame)
+    const parsed = parseFrame(rawFrame);
     if (parsed) {
-      frames.push(parsed)
+      frames.push(parsed);
     }
   }
 
-  return { frames, remainder }
+  return { frames, remainder };
 }
 
-async function maybeParseErrorResponse(response: Response): Promise<ErrorResponse | undefined> {
-  const contentType = response.headers.get('content-type') ?? ''
-  if (!contentType.includes('application/json')) {
-    return undefined
+async function maybeParseErrorResponse(
+  response: Response,
+): Promise<ErrorResponse | undefined> {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    return undefined;
   }
 
-  const payload = await response.json()
-  const result = validateSchema<ErrorResponse>(REST_SCHEMA_PATHS.errorResponse, payload)
-  return result.ok ? result.data : undefined
+  const payload = await response.json();
+  const result = validateSchema<ErrorResponse>(
+    REST_SCHEMA_PATHS.errorResponse,
+    payload,
+  );
+  return result.ok ? result.data : undefined;
 }
 
 async function consumeSseBody(
@@ -132,123 +141,139 @@ async function consumeSseBody(
   onFrame: (frame: SseFrame) => void,
   signal?: AbortSignal,
 ) {
-  const reader = body.getReader()
-  let remainder = ''
+  const reader = body.getReader();
+  let remainder = "";
 
   while (true) {
     if (signal?.aborted) {
-      throw new DOMException('Aborted', 'AbortError')
+      throw new DOMException("Aborted", "AbortError");
     }
 
-    const { done, value } = await reader.read()
+    const { done, value } = await reader.read();
     if (done) {
-      return
+      return;
     }
 
-    remainder += textDecoder.decode(value, { stream: true })
-    const parsed = parseSseChunk(remainder)
-    remainder = parsed.remainder
+    remainder += textDecoder.decode(value, { stream: true });
+    const parsed = parseSseChunk(remainder);
+    remainder = parsed.remainder;
 
     for (const frame of parsed.frames) {
-      onFrame(frame)
+      onFrame(frame);
     }
   }
 }
 
 function isAbortError(error: unknown) {
-  return error instanceof DOMException && error.name === 'AbortError'
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
-export function openValidatedEventStream(options: StreamOptions, handlers: StreamHandlers) {
-  const reconnectBaseDelayMs = options.reconnectBaseDelayMs ?? 1_000
-  const reconnectMaxDelayMs = options.reconnectMaxDelayMs ?? 15_000
-  const abortController = new AbortController()
+export function openValidatedEventStream(
+  options: StreamOptions,
+  handlers: StreamHandlers,
+) {
+  const reconnectBaseDelayMs = options.reconnectBaseDelayMs ?? 1_000;
+  const reconnectMaxDelayMs = options.reconnectMaxDelayMs ?? 15_000;
+  const abortController = new AbortController();
 
-  const externalSignal = options.signal
-  externalSignal?.addEventListener('abort', () => abortController.abort(), { once: true })
+  const externalSignal = options.signal;
+  externalSignal?.addEventListener("abort", () => abortController.abort(), {
+    once: true,
+  });
 
-  const internalSignal = abortController.signal
-  let lastEventId: string | undefined
+  const internalSignal = abortController.signal;
+  let lastEventId: string | undefined;
 
   const run = async () => {
-    let reconnectAttempt = 0
+    let reconnectAttempt = 0;
 
     while (!internalSignal.aborted) {
       try {
-        const streamUrl = buildStreamUrl(options.baseUrl, options.filter)
+        const streamUrl = buildStreamUrl(options.baseUrl, options.filter);
         const response = await fetch(streamUrl, {
-          method: 'GET',
+          method: "GET",
           headers: {
-            Accept: 'text/event-stream',
+            Accept: "text/event-stream",
             Authorization: `Bearer ${options.token}`,
-            ...(lastEventId ? { 'Last-Event-ID': lastEventId } : {}),
+            ...(lastEventId ? { "Last-Event-ID": lastEventId } : {}),
           },
           signal: internalSignal,
-        })
+        });
 
         if (!response.ok) {
-          const details = await maybeParseErrorResponse(response)
-          throw new JobServerHttpError(response.status, streamUrl.toString(), details)
+          const details = await maybeParseErrorResponse(response);
+          throw new JobServerHttpError(
+            response.status,
+            streamUrl.toString(),
+            details,
+          );
         }
 
         if (!response.body) {
-          throw new Error('SSE response did not include a readable body')
+          throw new Error("SSE response did not include a readable body");
         }
 
-        reconnectAttempt = 0
-        handlers.onOpen?.()
+        reconnectAttempt = 0;
+        handlers.onOpen?.();
 
         await consumeSseBody(
           response.body,
           (frame) => {
             if (frame.id) {
-              lastEventId = frame.id
+              lastEventId = frame.id;
             }
 
             if (!frame.data) {
-              return
+              return;
             }
 
-            let payload: unknown
+            let payload: unknown;
             try {
-              payload = JSON.parse(frame.data)
+              payload = JSON.parse(frame.data);
             } catch (error) {
-              handlers.onError?.(error)
-              return
+              handlers.onError?.(error);
+              return;
             }
 
-            const validation = validateSseEvent<StreamEvent>(payload)
+            const validation = validateSseEvent<StreamEvent>(payload);
             if (validation.ok === false) {
               handlers.onError?.(
-                new ContractValidationError(SSE_SCHEMA_PATHS.streamEvent, validation.errors, payload),
-              )
-              return
+                new ContractValidationError(
+                  SSE_SCHEMA_PATHS.streamEvent,
+                  validation.errors,
+                  payload,
+                ),
+              );
+              return;
             }
 
-            handlers.onEvent(validation.data, frame)
+            handlers.onEvent(validation.data, frame);
           },
           internalSignal,
-        )
+        );
       } catch (error) {
         if (isAbortError(error) || internalSignal.aborted) {
-          break
+          break;
         }
 
-        handlers.onError?.(error)
-        reconnectAttempt += 1
-        const backoff = Math.min(reconnectMaxDelayMs, reconnectBaseDelayMs * 2 ** (reconnectAttempt - 1))
-        await delay(backoff, internalSignal)
+        handlers.onError?.(error);
+        reconnectAttempt += 1;
+        const backoff = Math.min(
+          reconnectMaxDelayMs,
+          reconnectBaseDelayMs * 2 ** (reconnectAttempt - 1),
+        );
+        await delay(backoff, internalSignal);
       }
     }
 
-    handlers.onClose?.()
-  }
+    handlers.onClose?.();
+  };
 
-  void run()
+  void run();
 
   return {
     close() {
-      abortController.abort()
+      abortController.abort();
     },
-  }
+  };
 }

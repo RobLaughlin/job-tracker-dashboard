@@ -20,6 +20,8 @@ Run from `frontend/`:
 - `npm run generate:validators` - generate schema registry from `../schemas/**/*.json`
 - `npm run generate` - run both generators
 - `npm run check:generated` - fail if generated files are stale
+- `npm run verify:precommit` - generated checks + typecheck + lint + Prettier check
+- `npm run verify:prepush` - pre-commit checks + unit tests
 
 ## Generated Files
 
@@ -27,6 +29,8 @@ Run from `frontend/`:
 - `frontend/src/generated/schema-registry.ts`
 
 Do not edit generated files manually.
+
+If `openapi.yaml` or `schemas/` changes, run `npm run generate` and commit regenerated files.
 
 ## Runtime Validation
 
@@ -58,3 +62,11 @@ Validator tests live in:
 Run with:
 
 - `npm run test`
+
+## Documentation Expectations
+
+When contract structure or semantics change, update:
+
+- `README.md`
+- `docs/*.md` affected by the change
+- `frontend/README.md`

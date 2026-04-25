@@ -4,10 +4,7 @@
   "title": "Job Tasks Response",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "job_id",
-    "items"
-  ],
+  "required": ["job_id", "items"],
   "properties": {
     "job_id": {
       "$ref": "../models/common.schema.json#/$defs/jobId"

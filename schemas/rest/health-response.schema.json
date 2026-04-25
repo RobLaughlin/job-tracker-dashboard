@@ -4,13 +4,7 @@
   "title": "Health Response",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "status",
-    "service",
-    "api_version",
-    "schema_version",
-    "time"
-  ],
+  "required": ["status", "service", "api_version", "schema_version", "time"],
   "properties": {
     "status": {
       "type": "string",

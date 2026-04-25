@@ -32,18 +32,11 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "operation",
-        "edge"
-      ],
+      "required": ["operation", "edge"],
       "properties": {
         "operation": {
           "type": "string",
-          "enum": [
-            "added",
-            "updated",
-            "removed"
-          ]
+          "enum": ["added", "updated", "removed"]
         },
         "edge": {
           "$ref": "../models/dependency-edge.schema.json"

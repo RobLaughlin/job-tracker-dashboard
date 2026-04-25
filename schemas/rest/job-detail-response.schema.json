@@ -9,10 +9,7 @@
     {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "dependency_mode",
-        "required_task_summary"
-      ],
+      "required": ["dependency_mode", "required_task_summary"],
       "properties": {
         "job_id": {
           "$ref": "../models/common.schema.json#/$defs/jobId"
@@ -38,12 +35,7 @@
         "required_task_summary": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "total",
-            "succeeded",
-            "failed",
-            "cancelled"
-          ],
+          "required": ["total", "succeeded", "failed", "cancelled"],
           "properties": {
             "total": {
               "type": "integer",

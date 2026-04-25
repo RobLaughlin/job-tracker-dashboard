@@ -1,0 +1,12 @@
+{
+  "name": "job-dashboard-repo",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "verify:precommit": "npm --prefix frontend run verify:precommit",
+    "verify:prepush": "npm --prefix frontend run verify:prepush"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

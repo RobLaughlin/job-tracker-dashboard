@@ -4,13 +4,7 @@
   "title": "Job",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "job_id",
-    "name",
-    "status",
-    "created_at",
-    "updated_at"
-  ],
+  "required": ["job_id", "name", "status", "created_at", "updated_at"],
   "properties": {
     "job_id": {
       "$ref": "./common.schema.json#/$defs/jobId"

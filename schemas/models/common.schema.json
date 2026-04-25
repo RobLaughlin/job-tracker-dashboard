@@ -40,13 +40,7 @@
     },
     "taskStatus": {
       "type": "string",
-      "enum": [
-        "queued",
-        "running",
-        "succeeded",
-        "failed",
-        "cancelled"
-      ]
+      "enum": ["queued", "running", "succeeded", "failed", "cancelled"]
     },
     "eventId": {
       "type": "string",

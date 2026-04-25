@@ -1,90 +1,94 @@
-import type { components } from '../../generated/api-types'
+import type { components } from "../../generated/api-types";
 
-export type JobStatus = components['schemas']['jobStatus']
-export type TaskStatus = components['schemas']['taskStatus']
+export type JobStatus = components["schemas"]["jobStatus"];
+export type TaskStatus = components["schemas"]["taskStatus"];
 
-export type HealthResponse = components['schemas']['health-response.schema']
-export type JobsListResponse = components['schemas']['jobs-list-response.schema']
-export type JobDetailResponse = components['schemas']['job-detail-response.schema']
-export type JobTasksResponse = components['schemas']['job-tasks-response.schema']
-export type JobDependenciesResponse = components['schemas']['job-dependencies-response.schema']
-export type ErrorResponse = components['schemas']['error.schema']
+export type HealthResponse = components["schemas"]["health-response.schema"];
+export type JobsListResponse =
+  components["schemas"]["jobs-list-response.schema"];
+export type JobDetailResponse =
+  components["schemas"]["job-detail-response.schema"];
+export type JobTasksResponse =
+  components["schemas"]["job-tasks-response.schema"];
+export type JobDependenciesResponse =
+  components["schemas"]["job-dependencies-response.schema"];
+export type ErrorResponse = components["schemas"]["error.schema"];
 
 export type SnapshotEvent = {
-  event_id: string
-  event_type: 'snapshot'
-  schema_version: '1.0.0'
-  occurred_at: string
-  job_id: string
+  event_id: string;
+  event_type: "snapshot";
+  schema_version: "1.0.0";
+  occurred_at: string;
+  job_id: string;
   payload: {
-    job: components['schemas']['job.schema']
-    tasks: components['schemas']['task.schema'][]
+    job: components["schemas"]["job.schema"];
+    tasks: components["schemas"]["task.schema"][];
     dependencies: {
-      incoming: components['schemas']['dependency-edge.schema'][]
-      outgoing: components['schemas']['dependency-edge.schema'][]
-    }
-  }
-}
+      incoming: components["schemas"]["dependency-edge.schema"][];
+      outgoing: components["schemas"]["dependency-edge.schema"][];
+    };
+  };
+};
 
 export type JobUpdatedEvent = {
-  event_id: string
-  event_type: 'job.updated'
-  schema_version: '1.0.0'
-  occurred_at: string
-  job_id: string
+  event_id: string;
+  event_type: "job.updated";
+  schema_version: "1.0.0";
+  occurred_at: string;
+  job_id: string;
   payload: {
-    status: JobStatus
-  }
-}
+    status: JobStatus;
+  };
+};
 
 export type TaskUpdatedEvent = {
-  event_id: string
-  event_type: 'task.updated'
-  schema_version: '1.0.0'
-  occurred_at: string
-  job_id: string
+  event_id: string;
+  event_type: "task.updated";
+  schema_version: "1.0.0";
+  occurred_at: string;
+  job_id: string;
   payload: {
-    task_id: string
-    required: boolean
-    status: TaskStatus
-  }
-}
+    task_id: string;
+    required: boolean;
+    status: TaskStatus;
+  };
+};
 
 export type DependencyUpdatedEvent = {
-  event_id: string
-  event_type: 'job.dependency.updated'
-  schema_version: '1.0.0'
-  occurred_at: string
-  job_id: string
+  event_id: string;
+  event_type: "job.dependency.updated";
+  schema_version: "1.0.0";
+  occurred_at: string;
+  job_id: string;
   payload: {
-    operation: 'added' | 'updated' | 'removed'
-    edge: components['schemas']['dependency-edge.schema']
-  }
-}
+    operation: "added" | "updated" | "removed";
+    edge: components["schemas"]["dependency-edge.schema"];
+  };
+};
 
 export type HeartbeatEvent = {
-  event_id: string
-  event_type: 'heartbeat'
-  schema_version: '1.0.0'
-  occurred_at: string
-  job_id: string
+  event_id: string;
+  event_type: "heartbeat";
+  schema_version: "1.0.0";
+  occurred_at: string;
+  job_id: string;
   payload: {
-    interval_seconds: number
-  }
-}
+    interval_seconds: number;
+  };
+};
 
 export type StreamErrorEvent = {
-  event_id: string
-  event_type: 'error'
-  schema_version: '1.0.0'
-  occurred_at: string
-  job_id: string
+  event_id: string;
+  event_type: "error";
+  schema_version: "1.0.0";
+  occurred_at: string;
+  job_id: string;
   payload: {
-    code: string
-    message: string
-    recoverable: boolean
-  }
-}
+    code: string;
+    message: string;
+    recoverable: boolean;
+  };
+};
 
 export type StreamEvent =
   | SnapshotEvent
@@ -92,4 +96,4 @@ export type StreamEvent =
   | TaskUpdatedEvent
   | DependencyUpdatedEvent
   | HeartbeatEvent
-  | StreamErrorEvent
+  | StreamErrorEvent;

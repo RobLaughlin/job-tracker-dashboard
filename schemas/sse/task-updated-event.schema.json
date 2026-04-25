@@ -32,11 +32,7 @@
     "payload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "task_id",
-        "required",
-        "status"
-      ],
+      "required": ["task_id", "required", "status"],
       "properties": {
         "task_id": {
           "$ref": "../models/common.schema.json#/$defs/taskId"

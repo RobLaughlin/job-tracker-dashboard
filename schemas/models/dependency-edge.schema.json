@@ -4,12 +4,7 @@
   "title": "Dependency Edge",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "dependency_id",
-    "source_job_id",
-    "target_job_id",
-    "required"
-  ],
+  "required": ["dependency_id", "source_job_id", "target_job_id", "required"],
   "properties": {
     "dependency_id": {
       "$ref": "./common.schema.json#/$defs/dependencyId"
