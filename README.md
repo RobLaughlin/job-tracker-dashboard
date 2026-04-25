@@ -82,6 +82,13 @@ The React + TypeScript + Vite frontend lives in `frontend/`.
 - Generated frontend contract artifacts live in `frontend/src/generated/`.
 - The frontend includes a full conformity suite with strict minimum gating for dashboard connection.
 
+## Minimal Server Example
+
+A runnable reference server is available at `examples/minimal-job-server/`.
+
+- Start from `examples/minimal-job-server/README.md`.
+- It is intended as a scaffold for developers implementing their own compliant Job Server.
+
 ## Git Hooks and Verification
 
 Husky hooks are configured at repository root.
