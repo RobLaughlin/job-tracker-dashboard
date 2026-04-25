@@ -33,11 +33,15 @@ Do not edit generated files manually.
 Runtime validation is implemented in:
 
 - `frontend/src/lib/contract/validators.ts`
+- `frontend/src/lib/contract/client.ts`
+- `frontend/src/lib/contract/sse.ts`
 
 Helpers include:
 
 - `validateSchema(schemaPath, payload)`
 - `validateSseEvent(payload)`
+- `createJobServerClient({ baseUrl, token })`
+- `openValidatedEventStream(options, handlers)`
 
 Schema path constants are in:
 
@@ -48,6 +52,8 @@ Schema path constants are in:
 Validator tests live in:
 
 - `frontend/src/lib/contract/validators.test.ts`
+- `frontend/src/lib/contract/client.test.ts`
+- `frontend/src/lib/contract/sse.test.ts`
 
 Run with:
 

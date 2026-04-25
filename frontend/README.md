@@ -38,6 +38,10 @@ Generated output:
 
 - `src/lib/contract/validators.ts`
 - `src/lib/contract/schema-paths.ts`
+- `src/lib/contract/client.ts`
+- `src/lib/contract/sse.ts`
+
+Main entrypoint exports are re-exported from `src/lib/contract/index.ts`.
 
 ## Verification
 
