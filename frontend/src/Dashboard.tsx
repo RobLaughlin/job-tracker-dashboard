@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useRef, useState, type FormEvent } from "react";
 import styled from "styled-components";
 import {
   getInitialConformityChecks,
@@ -456,6 +456,7 @@ export default function Dashboard() {
   const [running, setRunning] = useState(false);
   const [minimumPassed, setMinimumPassed] = useState<boolean | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const canRun =
     baseUrl.trim().length > 0 && apiKey.trim().length > 0 && !running;
@@ -487,6 +488,10 @@ export default function Dashboard() {
       return;
     }
 
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setRunning(true);
     setRunError(null);
     setMinimumPassed(null);
@@ -497,6 +502,7 @@ export default function Dashboard() {
       const report = await runConformitySuite({
         baseUrl,
         token: apiKey,
+        signal: controller.signal,
         onChecks: (nextChecks) => {
           setChecks(nextChecks);
         },
@@ -508,6 +514,18 @@ export default function Dashboard() {
       setChecks(report.checks);
       setMinimumPassed(report.minimumPassed);
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        setEvents((current) => [
+          {
+            timestamp: Date.now(),
+            level: "warn",
+            message: "Conformity run cancelled by user.",
+          },
+          ...current,
+        ]);
+        return;
+      }
+
       const message =
         error instanceof Error
           ? error.message
@@ -523,8 +541,14 @@ export default function Dashboard() {
         ...current,
       ]);
     } finally {
+      abortControllerRef.current = null;
       setRunning(false);
     }
+  };
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    setRunning(false);
   };
 
   return (
@@ -562,9 +586,13 @@ export default function Dashboard() {
               onChange={(event) => setApiKey(event.target.value)}
             />
           </Field>
-          <RunButton type="submit" disabled={!canRun}>
-            {running ? "Running..." : "Run Conformity Check"}
-            <ArrowGlyph />
+          <RunButton
+            type={running ? "button" : "submit"}
+            disabled={!running && !canRun}
+            onClick={running ? handleCancel : undefined}
+          >
+            {running ? "Cancel" : "Run Conformity Check"}
+            {!running ? <ArrowGlyph /> : null}
           </RunButton>
         </FormCard>
         {runError ? <ErrorNote>{runError}</ErrorNote> : null}
