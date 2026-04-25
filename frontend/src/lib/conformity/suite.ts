@@ -26,6 +26,15 @@ export type SuiteLog = {
   timestamp: number;
   level: "info" | "warn" | "error";
   message: string;
+  source: "client" | "server";
+  channel: "suite" | "rest" | "sse";
+  direction: "outbound" | "inbound" | "internal";
+  method?: string;
+  url?: string;
+  status?: number;
+  latencyMs?: number;
+  checkId?: string;
+  payload?: unknown;
 };
 
 export type ConformitySuiteReport = {
@@ -306,7 +315,50 @@ export async function runConformitySuite(
   };
 
   const log = (level: SuiteLog["level"], message: string) => {
-    config.onLog?.({ timestamp: Date.now(), level, message });
+    config.onLog?.({
+      timestamp: Date.now(),
+      level,
+      message,
+      source: "client",
+      channel: "suite",
+      direction: "internal",
+    });
+  };
+
+  const logEntry = (entry: Omit<SuiteLog, "timestamp">) => {
+    config.onLog?.({ timestamp: Date.now(), ...entry });
+  };
+
+  const logRest = (entry: {
+    level: SuiteLog["level"];
+    direction: "outbound" | "inbound";
+    method: string;
+    url: string;
+    message: string;
+    status?: number;
+    latencyMs?: number;
+    checkId?: string;
+    payload?: unknown;
+  }) => {
+    logEntry({
+      source: entry.direction === "outbound" ? "client" : "server",
+      channel: "rest",
+      ...entry,
+    });
+  };
+
+  const logSse = (entry: {
+    level: SuiteLog["level"];
+    direction: "outbound" | "inbound" | "internal";
+    message: string;
+    checkId?: string;
+    payload?: unknown;
+  }) => {
+    logEntry({
+      source: entry.direction === "inbound" ? "server" : "client",
+      channel: "sse",
+      ...entry,
+    });
   };
 
   let sampledJobId: string | undefined;
@@ -340,16 +392,64 @@ export async function runConformitySuite(
   };
 
   await runCheck("health", async () => {
+    const startedAt = Date.now();
+    logRest({
+      level: "info",
+      direction: "outbound",
+      method: "GET",
+      url: "/v1/health",
+      checkId: "health",
+      message: "Requesting health endpoint",
+    });
     const health = await client.getHealth();
+    logRest({
+      level: "info",
+      direction: "inbound",
+      method: "GET",
+      url: "/v1/health",
+      status: 200,
+      latencyMs: Date.now() - startedAt,
+      checkId: "health",
+      message: "Received health response",
+      payload: health,
+    });
     return `Service ${health.service} is healthy on API ${health.api_version}.`;
   });
 
   await runCheck("auth-enforced", async () => {
+    const startedAt = Date.now();
+    logRest({
+      level: "info",
+      direction: "outbound",
+      method: "GET",
+      url: "/v1/jobs?limit=1",
+      checkId: "auth-enforced",
+      message: "Sending invalid-token auth probe",
+    });
     await checkAuthEnforcement(config.baseUrl, config.token, config.signal);
+    logRest({
+      level: "info",
+      direction: "inbound",
+      method: "GET",
+      url: "/v1/jobs?limit=1",
+      status: 401,
+      latencyMs: Date.now() - startedAt,
+      checkId: "auth-enforced",
+      message: "Invalid token correctly rejected",
+    });
     return "Invalid bearer token is rejected with 401/403.";
   });
 
   await runCheck("jobs-list", async () => {
+    const startedAt = Date.now();
+    logRest({
+      level: "info",
+      direction: "outbound",
+      method: "GET",
+      url: "/v1/jobs?limit=200",
+      checkId: "jobs-list",
+      message: "Listing jobs",
+    });
     const jobs = await client.listJobs({ limit: 200 });
     sampledJobList = jobs.items.map((job) => ({
       job_id: job.job_id,
@@ -357,6 +457,20 @@ export async function runConformitySuite(
     }));
     sampledJobId = jobs.items.at(0)?.job_id;
     jobsListCheckPassed = true;
+    logRest({
+      level: "info",
+      direction: "inbound",
+      method: "GET",
+      url: "/v1/jobs?limit=200",
+      status: 200,
+      latencyMs: Date.now() - startedAt,
+      checkId: "jobs-list",
+      message: "Received jobs list",
+      payload: {
+        itemCount: jobs.items.length,
+        sampledJobId,
+      },
+    });
     return `Fetched ${jobs.items.length} jobs from /v1/jobs.`;
   });
 
@@ -394,11 +508,56 @@ export async function runConformitySuite(
     log("warn", "No jobs available. Detail/task endpoint checks were skipped.");
   } else {
     await runCheck("job-detail", async () => {
+      const startedAt = Date.now();
+      const endpoint = `/v1/jobs/${encodeURIComponent(sampledJobId as string)}`;
+      logRest({
+        level: "info",
+        direction: "outbound",
+        method: "GET",
+        url: endpoint,
+        checkId: "job-detail",
+        message: "Fetching sampled job detail",
+      });
       const detail = await client.getJob(sampledJobId as string);
+      logRest({
+        level: "info",
+        direction: "inbound",
+        method: "GET",
+        url: endpoint,
+        status: 200,
+        latencyMs: Date.now() - startedAt,
+        checkId: "job-detail",
+        message: "Received sampled job detail",
+        payload: detail,
+      });
       return `Loaded details for ${detail.job_id}.`;
     });
     await runCheck("job-tasks", async () => {
+      const startedAt = Date.now();
+      const endpoint = `/v1/jobs/${encodeURIComponent(sampledJobId as string)}/tasks`;
+      logRest({
+        level: "info",
+        direction: "outbound",
+        method: "GET",
+        url: endpoint,
+        checkId: "job-tasks",
+        message: "Fetching sampled job tasks",
+      });
       const tasks = await client.getTasks(sampledJobId as string);
+      logRest({
+        level: "info",
+        direction: "inbound",
+        method: "GET",
+        url: endpoint,
+        status: 200,
+        latencyMs: Date.now() - startedAt,
+        checkId: "job-tasks",
+        message: "Received sampled job tasks",
+        payload: {
+          job_id: tasks.job_id,
+          itemCount: tasks.items.length,
+        },
+      });
       return `Loaded ${tasks.items.length} tasks for ${tasks.job_id}.`;
     });
   }
@@ -426,14 +585,45 @@ export async function runConformitySuite(
   }
 
   await runCheck("status-filter", async () => {
+    const startedAt = Date.now();
+    logRest({
+      level: "info",
+      direction: "outbound",
+      method: "GET",
+      url: "/v1/jobs?status=running&limit=50",
+      checkId: "status-filter",
+      message: "Testing status filter query",
+    });
     const filtered = await client.listJobs({
       statuses: ["running" as JobStatus],
       limit: 50,
+    });
+    logRest({
+      level: "info",
+      direction: "inbound",
+      method: "GET",
+      url: "/v1/jobs?status=running&limit=50",
+      status: 200,
+      latencyMs: Date.now() - startedAt,
+      checkId: "status-filter",
+      message: "Received filtered jobs list",
+      payload: {
+        itemCount: filtered.items.length,
+      },
     });
     return `Status filter accepted; received ${filtered.items.length} jobs.`;
   });
 
   await runCheck("sse-connect", async () => {
+    logSse({
+      level: "info",
+      direction: "outbound",
+      checkId: "sse-connect",
+      message: "Opening SSE connection",
+      payload: {
+        endpoint: "/v1/stream",
+      },
+    });
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error("SSE connect timeout after 10s.")),
@@ -444,6 +634,12 @@ export async function runConformitySuite(
         {
           onOpen: () => {
             clearTimeout(timeout);
+            logSse({
+              level: "info",
+              direction: "inbound",
+              checkId: "sse-connect",
+              message: "SSE stream opened",
+            });
             stream.close();
             resolve();
           },
@@ -451,6 +647,16 @@ export async function runConformitySuite(
             if (frame.id) {
               capturedEventId = frame.id;
             }
+            logSse({
+              level: "info",
+              direction: "inbound",
+              checkId: "sse-connect",
+              message: `SSE frame received${frame.event ? ` (${frame.event})` : ""}`,
+              payload: {
+                id: frame.id,
+                event: frame.event,
+              },
+            });
           },
           onError: (error) => {
             clearTimeout(timeout);
@@ -465,6 +671,12 @@ export async function runConformitySuite(
   });
 
   await runCheck("sse-snapshot", async () => {
+    logSse({
+      level: "info",
+      direction: "outbound",
+      checkId: "sse-snapshot",
+      message: "Waiting for snapshot event",
+    });
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error("Snapshot not received within 15s.")),
@@ -479,6 +691,16 @@ export async function runConformitySuite(
             }
             if (event.event_type === "snapshot") {
               clearTimeout(timeout);
+              logSse({
+                level: "info",
+                direction: "inbound",
+                checkId: "sse-snapshot",
+                message: "Snapshot event received",
+                payload: {
+                  event_id: event.event_id,
+                  job_id: event.job_id,
+                },
+              });
               stream.close();
               resolve();
             }
@@ -496,6 +718,12 @@ export async function runConformitySuite(
   });
 
   await runCheck("sse-heartbeat", async () => {
+    logSse({
+      level: "info",
+      direction: "outbound",
+      checkId: "sse-heartbeat",
+      message: "Waiting for heartbeat event",
+    });
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
         () => reject(new Error("Heartbeat not received within 25s.")),
@@ -510,6 +738,20 @@ export async function runConformitySuite(
             }
             if (event.event_type === "heartbeat") {
               clearTimeout(timeout);
+              logSse({
+                level: "info",
+                direction: "inbound",
+                checkId: "sse-heartbeat",
+                message: "Heartbeat event received",
+                payload: {
+                  event_id: event.event_id,
+                  interval_seconds:
+                    "payload" in event && event.payload
+                      ? (event.payload as { interval_seconds?: number })
+                          .interval_seconds
+                      : undefined,
+                },
+              });
               stream.close();
               resolve();
             }
@@ -527,12 +769,31 @@ export async function runConformitySuite(
   });
 
   await runCheck("sse-resume", async () => {
+    const startedAt = Date.now();
+    logSse({
+      level: "info",
+      direction: "outbound",
+      checkId: "sse-resume",
+      message: "Probing Last-Event-ID resume",
+      payload: {
+        lastEventId: capturedEventId,
+      },
+    });
     await checkSseResume(
       config.baseUrl,
       config.token,
       capturedEventId,
       config.signal,
     );
+    logSse({
+      level: "info",
+      direction: "inbound",
+      checkId: "sse-resume",
+      message: "Resume probe accepted by server",
+      payload: {
+        latencyMs: Date.now() - startedAt,
+      },
+    });
     await wait(100, config.signal);
     return "Resume probe accepted Last-Event-ID header.";
   });

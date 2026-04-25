@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type FormEvent } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import {
   getInitialConformityChecks,
   runConformitySuite,
@@ -20,6 +20,37 @@ const palette = {
   mint: "#5cffaf",
   mintDim: "rgba(92, 255, 175, 0.12)",
 };
+
+const themedScrollbar = css`
+  scrollbar-width: thin;
+  scrollbar-color: ${palette.borderBright} transparent;
+
+  &::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: ${palette.borderBright};
+    border-radius: 999px;
+    border: 2px solid ${palette.cardSoft};
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${palette.subdued};
+    background-clip: padding-box;
+    border: 2px solid ${palette.cardSoft};
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+`;
 
 const Page = styled.main`
   background: ${palette.shell};
@@ -166,22 +197,20 @@ const RunButton = styled.button`
   }
 `;
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 1.2rem;
-
-  @media (max-width: 980px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
 const PanelCard = styled(Card)`
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 0.9rem;
-  min-height: 380px;
   padding: 1.1rem 1.2rem 1.3rem;
+`;
+
+const EventLogCard = styled(PanelCard)`
+  grid-template-rows: auto auto 1fr;
+  height: 640px;
+`;
+
+const ChecksCard = styled(PanelCard)`
+  grid-template-rows: auto auto;
 `;
 
 const CardHead = styled.header`
@@ -320,45 +349,287 @@ const CheckDetail = styled.p`
 
 const EventList = styled.div`
   display: grid;
-  gap: 0.5rem;
+  gap: 0.85rem;
   align-content: start;
-  max-height: 100%;
-  overflow: auto;
-  padding-right: 0.25rem;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  min-height: 0;
+
+  ${themedScrollbar}
 `;
 
-const EventRow = styled.div`
+const EventCard = styled.article<{
+  $accent: string;
+  $stripeStyle: "solid" | "dashed";
+}>`
+  position: relative;
   border: 1px solid ${palette.border};
-  background: ${palette.shell};
-  border-radius: 8px;
-  padding: 0.55rem 0.68rem;
+  background: #0a0d14;
+  border-radius: 10px;
+  padding: 1rem 1.1rem 1.05rem 1.4rem;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.7rem;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: ${({ $accent, $stripeStyle }) =>
+      $stripeStyle === "dashed"
+        ? `repeating-linear-gradient(180deg, ${$accent} 0, ${$accent} 4px, transparent 4px, transparent 8px)`
+        : $accent};
+    opacity: ${({ $stripeStyle }) => ($stripeStyle === "dashed" ? 0.55 : 1)};
+  }
 `;
 
-const EventMeta = styled.div`
-  display: inline-flex;
+const EventTopRow = styled.header`
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
+  gap: 0.85rem;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+`;
+
+const EventTypeLabel = styled.span<{ $accent: string }>`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: ${({ $accent }) => $accent};
+  display: inline-flex;
+  align-items: baseline;
   gap: 0.45rem;
+  white-space: nowrap;
+
+  & > .glyph {
+    font-size: 14px;
+    line-height: 1;
+  }
+`;
+
+const EventTarget = styled.span`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 13.5px;
+  color: ${palette.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+  min-width: 0;
+
+  & > .method {
+    color: ${palette.subdued};
+    margin-right: 0.45rem;
+  }
+`;
+
+const EventChannelTag = styled.span`
   font-family: "Geist Mono", "JetBrains Mono", monospace;
   font-size: 10px;
-  letter-spacing: 0.06em;
-  color: ${palette.muted};
-`;
-
-const EventLevel = styled.span<{ $level: SuiteLog["level"] }>`
-  color: ${({ $level }) => {
-    if ($level === "error") return "#ff8f98";
-    if ($level === "warn") return "#ffcf7f";
-    return palette.mint;
-  }};
-`;
-
-const EventMessage = styled.p`
-  margin: 0;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   color: ${palette.subdued};
+  border: 1px solid ${palette.borderBright};
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
+`;
+
+const EventStatusPill = styled.span<{ $accent: string }>`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid ${({ $accent }) => $accent};
+  color: ${({ $accent }) => $accent};
+  background: rgba(255, 255, 255, 0.02);
+  white-space: nowrap;
+`;
+
+const EventMetaRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: ${palette.muted};
+  letter-spacing: 0.04em;
+  align-items: center;
+
+  & > .sep {
+    opacity: 0.5;
+  }
+
+  & > .check-id {
+    color: ${palette.subdued};
+    border-left: 1px solid ${palette.borderBright};
+    padding-left: 0.6rem;
+    margin-left: 0.1rem;
+  }
+
+  & > .level-warn {
+    color: #ffcf7f;
+  }
+
+  & > .level-error {
+    color: #ff8f98;
+  }
+`;
+
+const EventMessageText = styled.p`
+  margin: 0;
+  color: #d3dae8;
+  font-size: 13px;
+  line-height: 1.55;
+  font-family: "Geist", "Inter", sans-serif;
+`;
+
+const EventActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.05rem;
+`;
+
+const EventFilterBar = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+const FilterField = styled.label`
+  display: grid;
+  gap: 0.24rem;
+`;
+
+const FilterLabel = styled.span`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: ${palette.subdued};
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+`;
+
+const FilterSelect = styled.select`
+  appearance: none;
+  border-radius: 8px;
+  border: 1px solid ${palette.borderBright};
+  background: #0a0d14;
+  color: ${palette.text};
+  padding: 0.4rem 0.48rem;
+  font-size: 11px;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+`;
+
+const PayloadButton = styled.button`
+  border: 1px solid ${palette.borderBright};
+  border-radius: 6px;
+  background: #111623;
+  color: #9ac5ff;
+  padding: 0.32rem 0.65rem;
+  font-size: 10.5px;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease;
+
+  &:hover {
+    border-color: #5cffaf;
+    color: #5cffaf;
+  }
+`;
+
+const ModalBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 4, 8, 0.74);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  padding: 1.2rem;
+`;
+
+const ModalCard = styled.section`
+  width: min(860px, 100%);
+  max-height: 85vh;
+  overflow: hidden;
+  border: 1px solid ${palette.borderBright};
+  border-radius: 12px;
+  background: #090c13;
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.42);
+  display: grid;
+  grid-template-rows: auto 1fr;
+`;
+
+const ModalHeader = styled.header`
+  padding: 0.78rem 0.9rem;
+  border-bottom: 1px solid ${palette.border};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+`;
+
+const ModalTitle = styled.h3`
+  margin: 0;
+  color: ${palette.text};
+  font-size: 13px;
+  font-weight: 600;
+`;
+
+const ModalClose = styled.button`
+  border: 1px solid ${palette.borderBright};
+  background: #111623;
+  color: ${palette.text};
+  border-radius: 8px;
+  padding: 0.33rem 0.58rem;
+  cursor: pointer;
+  font-size: 11px;
+`;
+
+const ModalBody = styled.pre`
+  margin: 0;
+  overflow: auto;
+  padding: 0.85rem 0.95rem;
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.55;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+
+  ${themedScrollbar}
+`;
+
+const JsonLine = styled.div``;
+const JsonKey = styled.span`
+  color: #80b6ff;
+`;
+const JsonString = styled.span`
+  color: #9fe5b2;
+`;
+const JsonNumber = styled.span`
+  color: #ffcf7f;
+`;
+const JsonBoolean = styled.span`
+  color: #f78fc5;
+`;
+const JsonNull = styled.span`
+  color: #a3a9b8;
 `;
 
 const ScoreCard = styled(Card)`
@@ -408,80 +679,124 @@ const ErrorNote = styled.p`
   font-size: 12px;
 `;
 
-const DiagnosticsCard = styled(Card)`
-  display: grid;
-  gap: 0.7rem;
-`;
+function formatTimestampWithMs(timestamp: number) {
+  const date = new Date(timestamp);
+  const base = date.toLocaleTimeString();
+  const ms = String(date.getMilliseconds()).padStart(3, "0");
+  return `${base}.${ms}`;
+}
 
-const DiagnosticsList = styled.div`
-  display: grid;
-  gap: 0.45rem;
-`;
+type EventTypeMeta = {
+  label: string;
+  glyph: string;
+  accent: string;
+  stripeStyle: "solid" | "dashed";
+};
 
-const DiagnosticRow = styled.div`
-  border: 1px solid ${palette.border};
-  border-radius: 8px;
-  background: ${palette.shell};
-  padding: 0.6rem 0.7rem;
-  display: grid;
-  gap: 0.25rem;
-`;
-
-const DiagnosticHead = styled.div`
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-`;
-
-const DiagnosticLabel = styled.strong`
-  color: ${palette.text};
-  font-size: 12px;
-  font-weight: 500;
-`;
-
-const DiagnosticCategory = styled.span`
-  font-family: "Geist Mono", "JetBrains Mono", monospace;
-  color: ${palette.subdued};
-  font-size: 10px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-`;
-
-const DiagnosticMessage = styled.p`
-  margin: 0;
-  color: ${palette.subdued};
-  font-size: 12px;
-  line-height: 1.45;
-`;
-
-function classifyDiagnostic(message: string) {
-  const text = message.toLowerCase();
-  if (
-    text.includes("cors") ||
-    text.includes("preflight") ||
-    text.includes("origin")
-  ) {
-    return "cors/network";
+function getEventTypeMeta(entry: SuiteLog): EventTypeMeta {
+  if (entry.direction === "outbound") {
+    return {
+      label: "Request",
+      glyph: "→",
+      accent: "#8ec7ff",
+      stripeStyle: "solid",
+    };
   }
-  if (
-    text.includes("401") ||
-    text.includes("403") ||
-    text.includes("unauthorized") ||
-    text.includes("token")
-  ) {
-    return "auth";
+
+  if (entry.direction === "inbound") {
+    let accent: string = palette.subdued;
+    if (typeof entry.status === "number") {
+      if (entry.status >= 500) accent = "#ff8f98";
+      else if (entry.status >= 400) accent = "#ffcf7f";
+      else if (entry.status >= 200) accent = "#5cffaf";
+    } else if (entry.level === "error") {
+      accent = "#ff8f98";
+    } else if (entry.level === "warn") {
+      accent = "#ffcf7f";
+    } else {
+      accent = "#5cffaf";
+    }
+    return {
+      label: "Response",
+      glyph: "←",
+      accent,
+      stripeStyle: "solid",
+    };
   }
-  if (text.includes("schema") || text.includes("validation")) {
-    return "schema";
-  }
-  if (text.includes("timeout")) {
-    return "timeout";
-  }
-  if (text.includes("abort") || text.includes("cancel")) {
-    return "cancelled";
-  }
-  return "server";
+
+  let accent: string = palette.subdued;
+  if (entry.level === "error") accent = "#ff8f98";
+  else if (entry.level === "warn") accent = "#ffcf7f";
+
+  return {
+    label: "Internal",
+    glyph: "○",
+    accent,
+    stripeStyle: "dashed",
+  };
+}
+
+function highlightJsonText(json: string) {
+  return json.split("\n").map((line, lineIndex) => {
+    const tokens: Array<{ type: string; value: string }> = [];
+    const tokenRegex =
+      /("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"\s*:)|("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")|\b(true|false)\b|\bnull\b|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/g;
+
+    let cursor = 0;
+    let match = tokenRegex.exec(line);
+
+    while (match) {
+      const start = match.index;
+      if (start > cursor) {
+        tokens.push({ type: "plain", value: line.slice(cursor, start) });
+      }
+
+      const raw = match[0];
+      if (match[1]) {
+        tokens.push({ type: "key", value: raw.slice(0, -1) });
+        tokens.push({ type: "plain", value: ":" });
+      } else if (match[2]) {
+        tokens.push({ type: "string", value: raw });
+      } else if (match[3]) {
+        tokens.push({ type: "boolean", value: raw });
+      } else if (raw === "null") {
+        tokens.push({ type: "null", value: raw });
+      } else {
+        tokens.push({ type: "number", value: raw });
+      }
+
+      cursor = start + raw.length;
+      match = tokenRegex.exec(line);
+    }
+
+    if (cursor < line.length) {
+      tokens.push({ type: "plain", value: line.slice(cursor) });
+    }
+
+    return (
+      <JsonLine key={`line-${lineIndex}`}>
+        {tokens.map((token, tokenIndex) => {
+          const key = `${lineIndex}-${tokenIndex}`;
+          if (token.type === "key") {
+            return <JsonKey key={key}>{token.value}</JsonKey>;
+          }
+          if (token.type === "string") {
+            return <JsonString key={key}>{token.value}</JsonString>;
+          }
+          if (token.type === "number") {
+            return <JsonNumber key={key}>{token.value}</JsonNumber>;
+          }
+          if (token.type === "boolean") {
+            return <JsonBoolean key={key}>{token.value}</JsonBoolean>;
+          }
+          if (token.type === "null") {
+            return <JsonNull key={key}>{token.value}</JsonNull>;
+          }
+          return <span key={key}>{token.value}</span>;
+        })}
+      </JsonLine>
+    );
+  });
 }
 
 function StreamGlyph() {
@@ -532,6 +847,18 @@ export default function Dashboard() {
   const [running, setRunning] = useState(false);
   const [minimumPassed, setMinimumPassed] = useState<boolean | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
+  const [sourceFilter, setSourceFilter] = useState<"all" | "client" | "server">(
+    "all",
+  );
+  const [channelFilter, setChannelFilter] = useState<
+    "all" | "suite" | "rest" | "sse"
+  >("all");
+  const [levelFilter, setLevelFilter] = useState<
+    "all" | "info" | "warn" | "error"
+  >("all");
+  const [payloadModalEntry, setPayloadModalEntry] = useState<SuiteLog | null>(
+    null,
+  );
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const canRun =
@@ -548,25 +875,20 @@ export default function Dashboard() {
   const conformityPercent =
     totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
 
-  const diagnostics = useMemo(() => {
-    const rows = checks
-      .filter((check) => check.state === "failed")
-      .map((check) => ({
-        label: check.title,
-        category: classifyDiagnostic(check.detail),
-        message: check.detail,
-      }));
-
-    if (runError) {
-      rows.unshift({
-        label: "Run error",
-        category: classifyDiagnostic(runError),
-        message: runError,
-      });
-    }
-
-    return rows;
-  }, [checks, runError]);
+  const filteredEvents = useMemo(() => {
+    return events.filter((entry) => {
+      if (sourceFilter !== "all" && entry.source !== sourceFilter) {
+        return false;
+      }
+      if (channelFilter !== "all" && entry.channel !== channelFilter) {
+        return false;
+      }
+      if (levelFilter !== "all" && entry.level !== levelFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [events, sourceFilter, channelFilter, levelFilter]);
 
   const minimumLabel = useMemo(() => {
     if (running) {
@@ -577,6 +899,22 @@ export default function Dashboard() {
     }
     return minimumPassed ? "Meets minimum" : "Misses minimum";
   }, [minimumPassed, running]);
+
+  const payloadModalJson = useMemo(() => {
+    if (!payloadModalEntry || payloadModalEntry.payload === undefined) {
+      return "";
+    }
+
+    if (typeof payloadModalEntry.payload === "string") {
+      return payloadModalEntry.payload;
+    }
+
+    try {
+      return JSON.stringify(payloadModalEntry.payload, null, 2);
+    } catch {
+      return String(payloadModalEntry.payload);
+    }
+  }, [payloadModalEntry]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -616,6 +954,9 @@ export default function Dashboard() {
             timestamp: Date.now(),
             level: "warn",
             message: "Conformity run cancelled by user.",
+            source: "client",
+            channel: "suite",
+            direction: "internal",
           },
           ...current,
         ]);
@@ -633,6 +974,9 @@ export default function Dashboard() {
           timestamp: Date.now(),
           level: "error",
           message,
+          source: "client",
+          channel: "suite",
+          direction: "internal",
         },
         ...current,
       ]);
@@ -693,68 +1037,6 @@ export default function Dashboard() {
         </FormCard>
         {runError ? <ErrorNote>{runError}</ErrorNote> : null}
 
-        <Grid>
-          <PanelCard>
-            <CardHead>
-              <CardTitle>Checks</CardTitle>
-              <CardCount>{checks.length}</CardCount>
-            </CardHead>
-            <ChecksList>
-              {checks.map((check) => (
-                <CheckRow key={check.id}>
-                  <CheckHead>
-                    <CheckTitle>{check.title}</CheckTitle>
-                    <CheckBadges>
-                      <RequirementBadge $required={check.requiredForMinimum}>
-                        {check.requiredForMinimum ? "minimum" : "optional"}
-                      </RequirementBadge>
-                      <StatusBadge $state={check.state}>
-                        {check.state}
-                      </StatusBadge>
-                    </CheckBadges>
-                  </CheckHead>
-                  <CheckDetail>{check.detail}</CheckDetail>
-                </CheckRow>
-              ))}
-            </ChecksList>
-          </PanelCard>
-
-          <PanelCard>
-            <CardHead>
-              <CardTitle>Event Log</CardTitle>
-              <CardCount>{events.length} entries</CardCount>
-            </CardHead>
-            {events.length === 0 ? (
-              <Empty>
-                <EmptyGlyph>
-                  <StreamGlyph />
-                </EmptyGlyph>
-                <EmptyTitle>No events yet</EmptyTitle>
-                <EmptyHint>
-                  Live conformity events will stream here once a run is in
-                  progress.
-                </EmptyHint>
-              </Empty>
-            ) : (
-              <EventList>
-                {events.map((entry, index) => (
-                  <EventRow key={`${entry.timestamp}-${entry.level}-${index}`}>
-                    <EventMeta>
-                      <span>
-                        {new Date(entry.timestamp).toLocaleTimeString()}
-                      </span>
-                      <EventLevel $level={entry.level}>
-                        {entry.level.toUpperCase()}
-                      </EventLevel>
-                    </EventMeta>
-                    <EventMessage>{entry.message}</EventMessage>
-                  </EventRow>
-                ))}
-              </EventList>
-            )}
-          </PanelCard>
-        </Grid>
-
         <ScoreCard>
           <CardHead>
             <CardTitle>Conformity Score</CardTitle>
@@ -790,37 +1072,203 @@ export default function Dashboard() {
           </ScoreGrid>
         </ScoreCard>
 
-        <DiagnosticsCard>
+        <ChecksCard>
           <CardHead>
-            <CardTitle>Connection Diagnostics</CardTitle>
-            <CardCount>{diagnostics.length} issues</CardCount>
+            <CardTitle>Checks</CardTitle>
+            <CardCount>{checks.length}</CardCount>
           </CardHead>
-          {diagnostics.length === 0 ? (
+          <ChecksList>
+            {checks.map((check) => (
+              <CheckRow key={check.id}>
+                <CheckHead>
+                  <CheckTitle>{check.title}</CheckTitle>
+                  <CheckBadges>
+                    <RequirementBadge $required={check.requiredForMinimum}>
+                      {check.requiredForMinimum ? "minimum" : "optional"}
+                    </RequirementBadge>
+                    <StatusBadge $state={check.state}>
+                      {check.state}
+                    </StatusBadge>
+                  </CheckBadges>
+                </CheckHead>
+                <CheckDetail>{check.detail}</CheckDetail>
+              </CheckRow>
+            ))}
+          </ChecksList>
+        </ChecksCard>
+
+        <EventLogCard>
+          <CardHead>
+            <CardTitle>Event Log</CardTitle>
+            <CardCount>
+              {filteredEvents.length}/{events.length} entries
+            </CardCount>
+          </CardHead>
+          <EventFilterBar>
+            <FilterField>
+              <FilterLabel>Source</FilterLabel>
+              <FilterSelect
+                value={sourceFilter}
+                onChange={(event) =>
+                  setSourceFilter(
+                    event.target.value as "all" | "client" | "server",
+                  )
+                }
+              >
+                <option value="all">all</option>
+                <option value="client">client</option>
+                <option value="server">server</option>
+              </FilterSelect>
+            </FilterField>
+            <FilterField>
+              <FilterLabel>Channel</FilterLabel>
+              <FilterSelect
+                value={channelFilter}
+                onChange={(event) =>
+                  setChannelFilter(
+                    event.target.value as "all" | "suite" | "rest" | "sse",
+                  )
+                }
+              >
+                <option value="all">all</option>
+                <option value="suite">suite</option>
+                <option value="rest">rest</option>
+                <option value="sse">sse</option>
+              </FilterSelect>
+            </FilterField>
+            <FilterField>
+              <FilterLabel>Level</FilterLabel>
+              <FilterSelect
+                value={levelFilter}
+                onChange={(event) =>
+                  setLevelFilter(
+                    event.target.value as "all" | "info" | "warn" | "error",
+                  )
+                }
+              >
+                <option value="all">all</option>
+                <option value="info">info</option>
+                <option value="warn">warn</option>
+                <option value="error">error</option>
+              </FilterSelect>
+            </FilterField>
+            <FilterField>
+              <FilterLabel>Style</FilterLabel>
+              <FilterSelect value="console" disabled>
+                <option value="console">console</option>
+              </FilterSelect>
+            </FilterField>
+          </EventFilterBar>
+          {events.length === 0 ? (
             <Empty>
-              <EmptyTitle>No connection issues detected</EmptyTitle>
+              <EmptyGlyph>
+                <StreamGlyph />
+              </EmptyGlyph>
+              <EmptyTitle>No events yet</EmptyTitle>
               <EmptyHint>
-                Diagnostics will list likely causes when checks fail (auth,
-                CORS/network, schema, timeout, or server).
+                Live conformity events will stream here once a run is in
+                progress.
               </EmptyHint>
             </Empty>
           ) : (
-            <DiagnosticsList>
-              {diagnostics.map((diagnostic, index) => (
-                <DiagnosticRow
-                  key={`${diagnostic.label}-${diagnostic.category}-${index}`}
-                >
-                  <DiagnosticHead>
-                    <DiagnosticLabel>{diagnostic.label}</DiagnosticLabel>
-                    <DiagnosticCategory>
-                      {diagnostic.category}
-                    </DiagnosticCategory>
-                  </DiagnosticHead>
-                  <DiagnosticMessage>{diagnostic.message}</DiagnosticMessage>
-                </DiagnosticRow>
-              ))}
-            </DiagnosticsList>
+            <EventList>
+              {filteredEvents.map((entry, index) => {
+                const meta = getEventTypeMeta(entry);
+                const showStatusPill =
+                  entry.direction === "inbound" &&
+                  typeof entry.status === "number";
+                const hasTarget = Boolean(entry.url || entry.method);
+                return (
+                  <EventCard
+                    key={`${entry.timestamp}-${entry.level}-${index}`}
+                    $accent={meta.accent}
+                    $stripeStyle={meta.stripeStyle}
+                  >
+                    <EventTopRow>
+                      <EventTypeLabel $accent={meta.accent}>
+                        <span className="glyph" aria-hidden="true">
+                          {meta.glyph}
+                        </span>
+                        {meta.label}
+                      </EventTypeLabel>
+                      {hasTarget ? (
+                        <EventTarget title={entry.url ?? undefined}>
+                          {entry.method ? (
+                            <span className="method">{entry.method}</span>
+                          ) : null}
+                          {entry.url ?? ""}
+                        </EventTarget>
+                      ) : (
+                        <span />
+                      )}
+                      <EventChannelTag>{entry.channel}</EventChannelTag>
+                      {showStatusPill ? (
+                        <EventStatusPill $accent={meta.accent}>
+                          {entry.status}
+                        </EventStatusPill>
+                      ) : (
+                        <span />
+                      )}
+                    </EventTopRow>
+                    <EventMetaRow>
+                      <span>{formatTimestampWithMs(entry.timestamp)}</span>
+                      <span className="sep">·</span>
+                      <span>{entry.source}</span>
+                      {typeof entry.latencyMs === "number" ? (
+                        <>
+                          <span className="sep">·</span>
+                          <span>{entry.latencyMs}ms</span>
+                        </>
+                      ) : null}
+                      {entry.level !== "info" ? (
+                        <>
+                          <span className="sep">·</span>
+                          <span className={`level-${entry.level}`}>
+                            {entry.level}
+                          </span>
+                        </>
+                      ) : null}
+                      {entry.checkId ? (
+                        <span className="check-id">{entry.checkId}</span>
+                      ) : null}
+                    </EventMetaRow>
+                    <EventMessageText>{entry.message}</EventMessageText>
+                    {entry.payload !== undefined ? (
+                      <EventActions>
+                        <PayloadButton
+                          type="button"
+                          onClick={() => setPayloadModalEntry(entry)}
+                        >
+                          View payload
+                        </PayloadButton>
+                      </EventActions>
+                    ) : null}
+                  </EventCard>
+                );
+              })}
+            </EventList>
           )}
-        </DiagnosticsCard>
+        </EventLogCard>
+
+        {payloadModalEntry ? (
+          <ModalBackdrop onClick={() => setPayloadModalEntry(null)}>
+            <ModalCard onClick={(event) => event.stopPropagation()}>
+              <ModalHeader>
+                <ModalTitle>
+                  Payload preview • {payloadModalEntry.channel.toUpperCase()} •{" "}
+                  {payloadModalEntry.source.toUpperCase()}
+                </ModalTitle>
+                <ModalClose
+                  type="button"
+                  onClick={() => setPayloadModalEntry(null)}
+                >
+                  Close
+                </ModalClose>
+              </ModalHeader>
+              <ModalBody>{highlightJsonText(payloadModalJson)}</ModalBody>
+            </ModalCard>
+          </ModalBackdrop>
+        ) : null}
       </Container>
     </Page>
   );
