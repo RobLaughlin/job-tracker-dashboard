@@ -1,0 +1,15 @@
+id: 01JSGYNF3R7W78B83G8GW84EE6
+event: snapshot
+data: {"event_id":"01JSGYNF3R7W78B83G8GW84EE6","event_type":"snapshot","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:00Z","job_id":"job.import.001","payload":{"job":{"job_id":"job.import.001","status":"running"},"tasks":[{"task_id":"fetch-source","required":true,"status":"running"}],"dependencies":{"incoming":[{"dependency_id":"dep.100","source_job_id":"job.prepare.001","target_job_id":"job.import.001","required":true}],"outgoing":[]}}}
+
+id: 01JSGYP5AT4M5053X90TT5X6YS
+event: task.updated
+data: {"event_id":"01JSGYP5AT4M5053X90TT5X6YS","event_type":"task.updated","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:20Z","job_id":"job.import.001","payload":{"task_id":"fetch-source","required":true,"status":"succeeded"}}
+
+id: 01JSGYQK6R6J4MWHMFCQK311BG
+event: heartbeat
+data: {"event_id":"01JSGYQK6R6J4MWHMFCQK311BG","event_type":"heartbeat","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:30Z","job_id":"job.import.001","payload":{"interval_seconds":15}}
+
+id: 01JSGYS1R5WD4KT4R74KQ9YFGQ
+event: job.updated
+data: {"event_id":"01JSGYS1R5WD4KT4R74KQ9YFGQ","event_type":"job.updated","schema_version":"1.0.0","occurred_at":"2026-04-25T10:01:00Z","job_id":"job.import.001","payload":{"status":"succeeded"}}
