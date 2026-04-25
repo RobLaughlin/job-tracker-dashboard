@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/sse/snapshot-event.schema.json",
+  "title": "SSE Snapshot Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "job_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "../models/common.schema.json#/$defs/eventId"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "snapshot"
+    },
+    "schema_version": {
+      "$ref": "../models/common.schema.json#/$defs/schemaVersion"
+    },
+    "occurred_at": {
+      "$ref": "../models/common.schema.json#/$defs/timestamp"
+    },
+    "job_id": {
+      "$ref": "../models/common.schema.json#/$defs/jobId"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "job",
+        "tasks",
+        "dependencies"
+      ],
+      "properties": {
+        "job": {
+          "$ref": "../models/job.schema.json"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "../models/task.schema.json"
+          },
+          "maxItems": 5000
+        },
+        "dependencies": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "incoming",
+            "outgoing"
+          ],
+          "properties": {
+            "incoming": {
+              "type": "array",
+              "items": {
+                "$ref": "../models/dependency-edge.schema.json"
+              },
+              "maxItems": 2000
+            },
+            "outgoing": {
+              "type": "array",
+              "items": {
+                "$ref": "../models/dependency-edge.schema.json"
+              },
+              "maxItems": 2000
+            }
+          }
+        }
+      }
+    }
+  }
+}

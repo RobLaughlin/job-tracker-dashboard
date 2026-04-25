@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/rest/job-dependencies-response.schema.json",
+  "title": "Job Dependencies Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id",
+    "incoming",
+    "outgoing"
+  ],
+  "properties": {
+    "job_id": {
+      "$ref": "../models/common.schema.json#/$defs/jobId"
+    },
+    "incoming": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "$ref": "../models/dependency-edge.schema.json"
+      }
+    },
+    "outgoing": {
+      "type": "array",
+      "maxItems": 2000,
+      "items": {
+        "$ref": "../models/dependency-edge.schema.json"
+      }
+    }
+  }
+}

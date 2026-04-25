@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/models/task.schema.json",
+  "title": "Task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "task_id",
+    "name",
+    "required",
+    "status",
+    "started_at",
+    "finished_at"
+  ],
+  "properties": {
+    "task_id": {
+      "$ref": "./common.schema.json#/$defs/taskId"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "required": {
+      "type": "boolean"
+    },
+    "status": {
+      "$ref": "./common.schema.json#/$defs/taskStatus"
+    },
+    "started_at": {
+      "anyOf": [
+        {
+          "$ref": "./common.schema.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "$ref": "./common.schema.json#/$defs/timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/sse/task-updated-event.schema.json",
+  "title": "SSE Task Updated Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "job_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "../models/common.schema.json#/$defs/eventId"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "task.updated"
+    },
+    "schema_version": {
+      "$ref": "../models/common.schema.json#/$defs/schemaVersion"
+    },
+    "occurred_at": {
+      "$ref": "../models/common.schema.json#/$defs/timestamp"
+    },
+    "job_id": {
+      "$ref": "../models/common.schema.json#/$defs/jobId"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "required",
+        "status"
+      ],
+      "properties": {
+        "task_id": {
+          "$ref": "../models/common.schema.json#/$defs/taskId"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "status": {
+          "$ref": "../models/common.schema.json#/$defs/taskStatus"
+        }
+      }
+    }
+  }
+}

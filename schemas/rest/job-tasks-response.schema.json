@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/rest/job-tasks-response.schema.json",
+  "title": "Job Tasks Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id",
+    "items"
+  ],
+  "properties": {
+    "job_id": {
+      "$ref": "../models/common.schema.json#/$defs/jobId"
+    },
+    "items": {
+      "type": "array",
+      "maxItems": 5000,
+      "items": {
+        "$ref": "../models/task.schema.json"
+      }
+    }
+  }
+}

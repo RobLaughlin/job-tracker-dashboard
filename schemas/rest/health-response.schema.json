@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/rest/health-response.schema.json",
+  "title": "Health Response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "service",
+    "api_version",
+    "schema_version",
+    "time"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "const": "ok"
+    },
+    "service": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "api_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "schema_version": {
+      "$ref": "../models/common.schema.json#/$defs/schemaVersion"
+    },
+    "time": {
+      "$ref": "../models/common.schema.json#/$defs/timestamp"
+    }
+  }
+}

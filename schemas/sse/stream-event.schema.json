@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/sse/stream-event.schema.json",
+  "title": "SSE Stream Event Envelope",
+  "oneOf": [
+    {
+      "$ref": "./snapshot-event.schema.json"
+    },
+    {
+      "$ref": "./job-updated-event.schema.json"
+    },
+    {
+      "$ref": "./task-updated-event.schema.json"
+    },
+    {
+      "$ref": "./dependency-updated-event.schema.json"
+    },
+    {
+      "$ref": "./heartbeat-event.schema.json"
+    },
+    {
+      "$ref": "./error-event.schema.json"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/sse/error-event.schema.json",
+  "title": "SSE Error Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "job_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "../models/common.schema.json#/$defs/eventId"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "error"
+    },
+    "schema_version": {
+      "$ref": "../models/common.schema.json#/$defs/schemaVersion"
+    },
+    "occurred_at": {
+      "$ref": "../models/common.schema.json#/$defs/timestamp"
+    },
+    "job_id": {
+      "$ref": "../models/common.schema.json#/$defs/jobId"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "recoverable"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "minLength": 3,
+          "maxLength": 64
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "recoverable": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

@@ -69,3 +69,5 @@ A server is considered valid if it:
 - REST contract: `docs/rest-api.md`
 - SSE protocol: `docs/sse-protocol.md`
 - Status semantics and transitions: `docs/status-semantics.md`
+- OpenAPI contract: `openapi.yaml`
+- JSON Schemas: `schemas/`

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/models/job.schema.json",
+  "title": "Job",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "job_id",
+    "name",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "job_id": {
+      "$ref": "./common.schema.json#/$defs/jobId"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "status": {
+      "$ref": "./common.schema.json#/$defs/jobStatus"
+    },
+    "created_at": {
+      "$ref": "./common.schema.json#/$defs/timestamp"
+    },
+    "updated_at": {
+      "$ref": "./common.schema.json#/$defs/timestamp"
+    }
+  }
+}

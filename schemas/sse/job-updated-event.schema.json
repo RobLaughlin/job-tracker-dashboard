@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jobserver.example.io/schemas/sse/job-updated-event.schema.json",
+  "title": "SSE Job Updated Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "job_id",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "../models/common.schema.json#/$defs/eventId"
+    },
+    "event_type": {
+      "type": "string",
+      "const": "job.updated"
+    },
+    "schema_version": {
+      "$ref": "../models/common.schema.json#/$defs/schemaVersion"
+    },
+    "occurred_at": {
+      "$ref": "../models/common.schema.json#/$defs/timestamp"
+    },
+    "job_id": {
+      "$ref": "../models/common.schema.json#/$defs/jobId"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "../models/common.schema.json#/$defs/jobStatus"
+        }
+      }
+    }
+  }
+}

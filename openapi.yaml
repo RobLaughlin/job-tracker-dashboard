@@ -1,0 +1,286 @@
+openapi: 3.1.0
+info:
+  title: Job Server Contract
+  version: 1.0.0
+  summary: Phase 0 REST and SSE contract for job servers
+  description: |
+    Strict, secure contract for job servers consumed by a static dashboard.
+    REST is used for snapshot/query access and Server-Sent Events (SSE)
+    are used for live updates.
+servers:
+  - url: https://jobserver.example.io
+    description: Production
+  - url: http://localhost:8080
+    description: Local development
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+  - name: Jobs
+  - name: Stream
+paths:
+  /v1/health:
+    get:
+      tags: [System]
+      summary: Read service and contract health
+      security: []
+      responses:
+        '200':
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/rest/health-response.schema.json
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/jobs:
+    get:
+      tags: [Jobs]
+      summary: List jobs
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/JobStatus'
+      responses:
+        '200':
+          description: Paginated jobs
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/rest/jobs-list-response.schema.json
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/jobs/{job_id}:
+    get:
+      tags: [Jobs]
+      summary: Read job details
+      parameters:
+        - $ref: '#/components/parameters/JobIdPath'
+      responses:
+        '200':
+          description: Job details
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/rest/job-detail-response.schema.json
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/jobs/{job_id}/tasks:
+    get:
+      tags: [Jobs]
+      summary: List tasks for a job
+      parameters:
+        - $ref: '#/components/parameters/JobIdPath'
+      responses:
+        '200':
+          description: Tasks for a job
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/rest/job-tasks-response.schema.json
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/jobs/{job_id}/dependencies:
+    get:
+      tags: [Jobs]
+      summary: List job dependency edges
+      parameters:
+        - $ref: '#/components/parameters/JobIdPath'
+      responses:
+        '200':
+          description: Job dependency edges
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/rest/job-dependencies-response.schema.json
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /v1/stream:
+    get:
+      tags: [Stream]
+      summary: Subscribe to server-sent events
+      description: |
+        Opens a long-lived SSE connection.
+        Clients should reconnect with backoff and send Last-Event-ID when available.
+      parameters:
+        - $ref: '#/components/parameters/JobIdFilter'
+        - $ref: '#/components/parameters/JobStatus'
+      responses:
+        '200':
+          description: Event stream
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              example: no-cache
+            Connection:
+              schema:
+                type: string
+              example: keep-alive
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                task_update:
+                  summary: task.updated frame
+                  value: |
+                    id: 01JSGYP5AT4M5053X90TT5X6YS
+                    event: task.updated
+                    data: {"event_id":"01JSGYP5AT4M5053X90TT5X6YS","event_type":"task.updated","schema_version":"1.0.0","occurred_at":"2026-04-25T10:00:20Z","job_id":"job.import.001","payload":{"task_id":"fetch-source","required":true,"status":"succeeded"}}
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+      required: false
+      description: Page size limit.
+
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 512
+      required: false
+      description: Opaque cursor for pagination.
+
+    JobIdPath:
+      name: job_id
+      in: path
+      required: true
+      schema:
+        $ref: ./schemas/models/common.schema.json#/$defs/jobId
+      description: Job identifier.
+
+    JobIdFilter:
+      name: job_id
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        minItems: 1
+        maxItems: 100
+        items:
+          $ref: ./schemas/models/common.schema.json#/$defs/jobId
+      description: Optional repeatable filter by job id.
+
+    JobStatus:
+      name: status
+      in: query
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: array
+        minItems: 1
+        maxItems: 20
+        items:
+          $ref: ./schemas/models/common.schema.json#/$defs/jobStatus
+      description: Optional repeatable filter by job status.
+
+  responses:
+    BadRequest:
+      description: Request failed validation.
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas/common/error.schema.json
+
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas/common/error.schema.json
+
+    Forbidden:
+      description: Authenticated but missing required scope.
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas/common/error.schema.json
+
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas/common/error.schema.json
+
+    RateLimited:
+      description: Too many requests or stream connections.
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas/common/error.schema.json
+
+    InternalError:
+      description: Internal server error.
+      content:
+        application/json:
+          schema:
+            $ref: ./schemas/common/error.schema.json
