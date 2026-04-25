@@ -478,6 +478,10 @@ const EventMetaRow = styled.div`
     margin-left: 0.1rem;
   }
 
+  & > .corr {
+    color: #9ac5ff;
+  }
+
   & > .level-warn {
     color: #ffcf7f;
   }
@@ -860,6 +864,7 @@ export default function Dashboard() {
     null,
   );
   const abortControllerRef = useRef<AbortController | null>(null);
+  const localSequenceRef = useRef(0);
 
   const canRun =
     baseUrl.trim().length > 0 && apiKey.trim().length > 0 && !running;
@@ -876,7 +881,7 @@ export default function Dashboard() {
     totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
 
   const filteredEvents = useMemo(() => {
-    return events.filter((entry) => {
+    const matched = events.filter((entry) => {
       if (sourceFilter !== "all" && entry.source !== sourceFilter) {
         return false;
       }
@@ -888,7 +893,26 @@ export default function Dashboard() {
       }
       return true;
     });
+
+    return matched.sort((a, b) => {
+      if (a.sequence !== b.sequence) {
+        return a.sequence - b.sequence;
+      }
+      return a.timestamp - b.timestamp;
+    });
   }, [events, sourceFilter, channelFilter, levelFilter]);
+
+  const pushLocalEvent = (entry: Omit<SuiteLog, "timestamp" | "sequence">) => {
+    localSequenceRef.current += 1;
+    setEvents((current) => [
+      ...current,
+      {
+        timestamp: Date.now(),
+        sequence: localSequenceRef.current,
+        ...entry,
+      },
+    ]);
+  };
 
   const minimumLabel = useMemo(() => {
     if (running) {
@@ -931,6 +955,7 @@ export default function Dashboard() {
     setMinimumPassed(null);
     setChecks(getInitialConformityChecks());
     setEvents([]);
+    localSequenceRef.current = 0;
 
     try {
       const report = await runConformitySuite({
@@ -941,7 +966,11 @@ export default function Dashboard() {
           setChecks(nextChecks);
         },
         onLog: (entry) => {
-          setEvents((current) => [entry, ...current].slice(0, 220));
+          localSequenceRef.current = Math.max(
+            localSequenceRef.current,
+            entry.sequence,
+          );
+          setEvents((current) => [...current, entry].slice(-320));
         },
       });
 
@@ -949,17 +978,13 @@ export default function Dashboard() {
       setMinimumPassed(report.minimumPassed);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        setEvents((current) => [
-          {
-            timestamp: Date.now(),
-            level: "warn",
-            message: "Conformity run cancelled by user.",
-            source: "client",
-            channel: "suite",
-            direction: "internal",
-          },
-          ...current,
-        ]);
+        pushLocalEvent({
+          level: "warn",
+          message: "Conformity run cancelled by user.",
+          source: "client",
+          channel: "suite",
+          direction: "internal",
+        });
         return;
       }
 
@@ -969,17 +994,13 @@ export default function Dashboard() {
           : "Failed to run conformity suite.";
       setRunError(message);
       setMinimumPassed(false);
-      setEvents((current) => [
-        {
-          timestamp: Date.now(),
-          level: "error",
-          message,
-          source: "client",
-          channel: "suite",
-          direction: "internal",
-        },
-        ...current,
-      ]);
+      pushLocalEvent({
+        level: "error",
+        message,
+        source: "client",
+        channel: "suite",
+        direction: "internal",
+      });
     } finally {
       abortControllerRef.current = null;
       setRunning(false);
@@ -1180,7 +1201,7 @@ export default function Dashboard() {
                 const hasTarget = Boolean(entry.url || entry.method);
                 return (
                   <EventCard
-                    key={`${entry.timestamp}-${entry.level}-${index}`}
+                    key={`${entry.sequence}-${entry.timestamp}-${entry.level}-${index}`}
                     $accent={meta.accent}
                     $stripeStyle={meta.stripeStyle}
                   >
@@ -1213,7 +1234,27 @@ export default function Dashboard() {
                     <EventMetaRow>
                       <span>{formatTimestampWithMs(entry.timestamp)}</span>
                       <span className="sep">·</span>
+                      <span>#{String(entry.sequence).padStart(3, "0")}</span>
+                      <span className="sep">·</span>
                       <span>{entry.source}</span>
+                      {entry.requestId ? (
+                        <>
+                          <span className="sep">·</span>
+                          <span className="corr">req:{entry.requestId}</span>
+                        </>
+                      ) : null}
+                      {entry.streamId ? (
+                        <>
+                          <span className="sep">·</span>
+                          <span className="corr">stream:{entry.streamId}</span>
+                        </>
+                      ) : null}
+                      {entry.eventId ? (
+                        <>
+                          <span className="sep">·</span>
+                          <span className="corr">event:{entry.eventId}</span>
+                        </>
+                      ) : null}
                       {typeof entry.latencyMs === "number" ? (
                         <>
                           <span className="sep">·</span>

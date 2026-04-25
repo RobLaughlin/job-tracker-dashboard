@@ -23,6 +23,7 @@ export type ConformityCheck = {
 };
 
 export type SuiteLog = {
+  sequence: number;
   timestamp: number;
   level: "info" | "warn" | "error";
   message: string;
@@ -34,6 +35,9 @@ export type SuiteLog = {
   status?: number;
   latencyMs?: number;
   checkId?: string;
+  requestId?: string;
+  streamId?: string;
+  eventId?: string;
   payload?: unknown;
 };
 
@@ -316,6 +320,7 @@ export async function runConformitySuite(
 
   const log = (level: SuiteLog["level"], message: string) => {
     config.onLog?.({
+      sequence: ++logSequence,
       timestamp: Date.now(),
       level,
       message,
@@ -325,8 +330,12 @@ export async function runConformitySuite(
     });
   };
 
-  const logEntry = (entry: Omit<SuiteLog, "timestamp">) => {
-    config.onLog?.({ timestamp: Date.now(), ...entry });
+  const logEntry = (entry: Omit<SuiteLog, "timestamp" | "sequence">) => {
+    config.onLog?.({
+      timestamp: Date.now(),
+      sequence: ++logSequence,
+      ...entry,
+    });
   };
 
   const logRest = (entry: {
@@ -338,6 +347,9 @@ export async function runConformitySuite(
     status?: number;
     latencyMs?: number;
     checkId?: string;
+    requestId?: string;
+    streamId?: string;
+    eventId?: string;
     payload?: unknown;
   }) => {
     logEntry({
@@ -352,6 +364,9 @@ export async function runConformitySuite(
     direction: "outbound" | "inbound" | "internal";
     message: string;
     checkId?: string;
+    requestId?: string;
+    streamId?: string;
+    eventId?: string;
     payload?: unknown;
   }) => {
     logEntry({
@@ -365,6 +380,19 @@ export async function runConformitySuite(
   let sampledJobList: JobNode[] = [];
   let capturedEventId = "bootstrap";
   let jobsListCheckPassed = false;
+  let logSequence = 0;
+  let requestCounter = 0;
+  let streamCounter = 0;
+
+  const nextRequestId = (prefix: string) => {
+    requestCounter += 1;
+    return `${prefix}-${String(requestCounter).padStart(3, "0")}`;
+  };
+
+  const nextStreamId = () => {
+    streamCounter += 1;
+    return `sse-${String(streamCounter).padStart(3, "0")}`;
+  };
 
   const runCheck = async (id: string, handler: () => Promise<string>) => {
     ensureNotAborted(config.signal);
@@ -393,12 +421,14 @@ export async function runConformitySuite(
 
   await runCheck("health", async () => {
     const startedAt = Date.now();
+    const requestId = nextRequestId("health");
     logRest({
       level: "info",
       direction: "outbound",
       method: "GET",
       url: "/v1/health",
       checkId: "health",
+      requestId,
       message: "Requesting health endpoint",
     });
     const health = await client.getHealth();
@@ -410,6 +440,7 @@ export async function runConformitySuite(
       status: 200,
       latencyMs: Date.now() - startedAt,
       checkId: "health",
+      requestId,
       message: "Received health response",
       payload: health,
     });
@@ -418,12 +449,14 @@ export async function runConformitySuite(
 
   await runCheck("auth-enforced", async () => {
     const startedAt = Date.now();
+    const requestId = nextRequestId("auth");
     logRest({
       level: "info",
       direction: "outbound",
       method: "GET",
       url: "/v1/jobs?limit=1",
       checkId: "auth-enforced",
+      requestId,
       message: "Sending invalid-token auth probe",
     });
     await checkAuthEnforcement(config.baseUrl, config.token, config.signal);
@@ -435,6 +468,7 @@ export async function runConformitySuite(
       status: 401,
       latencyMs: Date.now() - startedAt,
       checkId: "auth-enforced",
+      requestId,
       message: "Invalid token correctly rejected",
     });
     return "Invalid bearer token is rejected with 401/403.";
@@ -442,12 +476,14 @@ export async function runConformitySuite(
 
   await runCheck("jobs-list", async () => {
     const startedAt = Date.now();
+    const requestId = nextRequestId("jobs-list");
     logRest({
       level: "info",
       direction: "outbound",
       method: "GET",
       url: "/v1/jobs?limit=200",
       checkId: "jobs-list",
+      requestId,
       message: "Listing jobs",
     });
     const jobs = await client.listJobs({ limit: 200 });
@@ -465,6 +501,7 @@ export async function runConformitySuite(
       status: 200,
       latencyMs: Date.now() - startedAt,
       checkId: "jobs-list",
+      requestId,
       message: "Received jobs list",
       payload: {
         itemCount: jobs.items.length,
@@ -509,6 +546,7 @@ export async function runConformitySuite(
   } else {
     await runCheck("job-detail", async () => {
       const startedAt = Date.now();
+      const requestId = nextRequestId("job-detail");
       const endpoint = `/v1/jobs/${encodeURIComponent(sampledJobId as string)}`;
       logRest({
         level: "info",
@@ -516,6 +554,7 @@ export async function runConformitySuite(
         method: "GET",
         url: endpoint,
         checkId: "job-detail",
+        requestId,
         message: "Fetching sampled job detail",
       });
       const detail = await client.getJob(sampledJobId as string);
@@ -527,6 +566,7 @@ export async function runConformitySuite(
         status: 200,
         latencyMs: Date.now() - startedAt,
         checkId: "job-detail",
+        requestId,
         message: "Received sampled job detail",
         payload: detail,
       });
@@ -534,6 +574,7 @@ export async function runConformitySuite(
     });
     await runCheck("job-tasks", async () => {
       const startedAt = Date.now();
+      const requestId = nextRequestId("job-tasks");
       const endpoint = `/v1/jobs/${encodeURIComponent(sampledJobId as string)}/tasks`;
       logRest({
         level: "info",
@@ -541,6 +582,7 @@ export async function runConformitySuite(
         method: "GET",
         url: endpoint,
         checkId: "job-tasks",
+        requestId,
         message: "Fetching sampled job tasks",
       });
       const tasks = await client.getTasks(sampledJobId as string);
@@ -552,6 +594,7 @@ export async function runConformitySuite(
         status: 200,
         latencyMs: Date.now() - startedAt,
         checkId: "job-tasks",
+        requestId,
         message: "Received sampled job tasks",
         payload: {
           job_id: tasks.job_id,
@@ -586,12 +629,14 @@ export async function runConformitySuite(
 
   await runCheck("status-filter", async () => {
     const startedAt = Date.now();
+    const requestId = nextRequestId("status-filter");
     logRest({
       level: "info",
       direction: "outbound",
       method: "GET",
       url: "/v1/jobs?status=running&limit=50",
       checkId: "status-filter",
+      requestId,
       message: "Testing status filter query",
     });
     const filtered = await client.listJobs({
@@ -606,6 +651,7 @@ export async function runConformitySuite(
       status: 200,
       latencyMs: Date.now() - startedAt,
       checkId: "status-filter",
+      requestId,
       message: "Received filtered jobs list",
       payload: {
         itemCount: filtered.items.length,
@@ -615,10 +661,12 @@ export async function runConformitySuite(
   });
 
   await runCheck("sse-connect", async () => {
+    const streamId = nextStreamId();
     logSse({
       level: "info",
       direction: "outbound",
       checkId: "sse-connect",
+      streamId,
       message: "Opening SSE connection",
       payload: {
         endpoint: "/v1/stream",
@@ -638,6 +686,7 @@ export async function runConformitySuite(
               level: "info",
               direction: "inbound",
               checkId: "sse-connect",
+              streamId,
               message: "SSE stream opened",
             });
             stream.close();
@@ -651,6 +700,8 @@ export async function runConformitySuite(
               level: "info",
               direction: "inbound",
               checkId: "sse-connect",
+              streamId,
+              eventId: frame.id,
               message: `SSE frame received${frame.event ? ` (${frame.event})` : ""}`,
               payload: {
                 id: frame.id,
@@ -671,10 +722,12 @@ export async function runConformitySuite(
   });
 
   await runCheck("sse-snapshot", async () => {
+    const streamId = nextStreamId();
     logSse({
       level: "info",
       direction: "outbound",
       checkId: "sse-snapshot",
+      streamId,
       message: "Waiting for snapshot event",
     });
     await new Promise<void>((resolve, reject) => {
@@ -695,6 +748,8 @@ export async function runConformitySuite(
                 level: "info",
                 direction: "inbound",
                 checkId: "sse-snapshot",
+                streamId,
+                eventId: event.event_id,
                 message: "Snapshot event received",
                 payload: {
                   event_id: event.event_id,
@@ -718,10 +773,12 @@ export async function runConformitySuite(
   });
 
   await runCheck("sse-heartbeat", async () => {
+    const streamId = nextStreamId();
     logSse({
       level: "info",
       direction: "outbound",
       checkId: "sse-heartbeat",
+      streamId,
       message: "Waiting for heartbeat event",
     });
     await new Promise<void>((resolve, reject) => {
@@ -742,6 +799,8 @@ export async function runConformitySuite(
                 level: "info",
                 direction: "inbound",
                 checkId: "sse-heartbeat",
+                streamId,
+                eventId: event.event_id,
                 message: "Heartbeat event received",
                 payload: {
                   event_id: event.event_id,
@@ -770,10 +829,12 @@ export async function runConformitySuite(
 
   await runCheck("sse-resume", async () => {
     const startedAt = Date.now();
+    const requestId = nextRequestId("sse-resume");
     logSse({
       level: "info",
       direction: "outbound",
       checkId: "sse-resume",
+      requestId,
       message: "Probing Last-Event-ID resume",
       payload: {
         lastEventId: capturedEventId,
@@ -789,6 +850,7 @@ export async function runConformitySuite(
       level: "info",
       direction: "inbound",
       checkId: "sse-resume",
+      requestId,
       message: "Resume probe accepted by server",
       payload: {
         latencyMs: Date.now() - startedAt,
