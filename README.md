@@ -69,5 +69,13 @@ A server is considered valid if it:
 - REST contract: `docs/rest-api.md`
 - SSE protocol: `docs/sse-protocol.md`
 - Status semantics and transitions: `docs/status-semantics.md`
+- Frontend code generation: `docs/frontend-codegen.md`
 - OpenAPI contract: `openapi.yaml`
 - JSON Schemas: `schemas/`
+
+## Frontend Workspace
+
+The React + TypeScript + Vite frontend lives in `frontend/`.
+
+- Start from `frontend/README.md` for setup and commands.
+- Generated frontend contract artifacts live in `frontend/src/generated/`.
