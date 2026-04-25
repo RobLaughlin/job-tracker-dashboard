@@ -1,7 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { getConformitySummary, runConformitySuite } from "./suite";
+import {
+  getConformitySummary,
+  getInitialConformityChecks,
+  runConformitySuite,
+} from "./suite";
 
 describe("conformity summary", () => {
+  it("returns predefined checks in pending state before a run", () => {
+    const checks = getInitialConformityChecks();
+
+    expect(checks.length).toBeGreaterThan(0);
+    expect(checks.every((check) => check.state === "pending")).toBe(true);
+    expect(checks.every((check) => check.detail === "Waiting to run")).toBe(
+      true,
+    );
+  });
+
   it("fails minimum if a required check fails", () => {
     const result = getConformitySummary([
       {

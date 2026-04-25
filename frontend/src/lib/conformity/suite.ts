@@ -112,6 +112,10 @@ function createInitialChecks(): ConformityCheck[] {
   }));
 }
 
+export function getInitialConformityChecks(): ConformityCheck[] {
+  return createInitialChecks();
+}
+
 function updateCheck(
   checks: ConformityCheck[],
   checkId: string,

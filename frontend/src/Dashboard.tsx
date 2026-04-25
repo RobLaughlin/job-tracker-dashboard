@@ -1,5 +1,11 @@
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import styled from "styled-components";
+import {
+  getInitialConformityChecks,
+  runConformitySuite,
+  type ConformityCheck,
+  type SuiteLog,
+} from "./lib/conformity/suite";
 
 const palette = {
   shell: "#0a0b10",
@@ -239,26 +245,168 @@ const EmptyGlyph = styled.div`
   margin-bottom: 0.3rem;
 `;
 
-function ChecklistGlyph() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      width="22"
-      height="22"
-    >
-      <path d="M5 7l2 2 4-4" />
-      <path d="M5 14l2 2 4-4" />
-      <path d="M14 7h6" />
-      <path d="M14 14h6" />
-      <path d="M14 20h6" />
-    </svg>
-  );
-}
+const ChecksList = styled.div`
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+`;
+
+const CheckRow = styled.article`
+  border: 1px solid ${palette.border};
+  background: ${palette.shell};
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  display: grid;
+  gap: 0.42rem;
+`;
+
+const CheckHead = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+`;
+
+const CheckTitle = styled.strong`
+  color: ${palette.text};
+  font-size: 12.5px;
+  font-weight: 500;
+`;
+
+const CheckBadges = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+`;
+
+const RequirementBadge = styled.span<{ $required: boolean }>`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid ${palette.borderBright};
+  color: ${({ $required }) => ($required ? palette.mint : palette.subdued)};
+`;
+
+const StatusBadge = styled.span<{ $state: ConformityCheck["state"] }>`
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid
+    ${({ $state }) => {
+      if ($state === "passed") return "#2fcf8f";
+      if ($state === "failed") return "#ff6f7a";
+      if ($state === "running") return "#8ec7ff";
+      return palette.borderBright;
+    }};
+  color: ${({ $state }) => {
+    if ($state === "passed") return "#5cffaf";
+    if ($state === "failed") return "#ff8f98";
+    if ($state === "running") return "#9dd0ff";
+    return palette.subdued;
+  }};
+`;
+
+const CheckDetail = styled.p`
+  margin: 0;
+  color: ${palette.subdued};
+  font-size: 12px;
+  line-height: 1.5;
+`;
+
+const EventList = styled.div`
+  display: grid;
+  gap: 0.5rem;
+  align-content: start;
+  max-height: 100%;
+  overflow: auto;
+  padding-right: 0.25rem;
+`;
+
+const EventRow = styled.div`
+  border: 1px solid ${palette.border};
+  background: ${palette.shell};
+  border-radius: 8px;
+  padding: 0.55rem 0.68rem;
+  display: grid;
+  gap: 0.25rem;
+`;
+
+const EventMeta = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: ${palette.muted};
+`;
+
+const EventLevel = styled.span<{ $level: SuiteLog["level"] }>`
+  color: ${({ $level }) => {
+    if ($level === "error") return "#ff8f98";
+    if ($level === "warn") return "#ffcf7f";
+    return palette.mint;
+  }};
+`;
+
+const EventMessage = styled.p`
+  margin: 0;
+  color: ${palette.subdued};
+  font-size: 12px;
+  line-height: 1.45;
+`;
+
+const ScoreCard = styled(Card)`
+  display: grid;
+  gap: 0.85rem;
+`;
+
+const ScoreGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+
+  @media (max-width: 760px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const ScoreItem = styled.div`
+  border: 1px solid ${palette.border};
+  border-radius: 10px;
+  background: ${palette.shell};
+  padding: 0.7rem 0.8rem;
+`;
+
+const ScoreLabel = styled.div`
+  color: ${palette.subdued};
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: "Geist Mono", "JetBrains Mono", monospace;
+`;
+
+const ScoreValue = styled.div<{ $tone?: "ok" | "bad" | "neutral" }>`
+  margin-top: 0.3rem;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: ${({ $tone }) => {
+    if ($tone === "ok") return palette.mint;
+    if ($tone === "bad") return "#ff8f98";
+    return palette.text;
+  }};
+`;
+
+const ErrorNote = styled.p`
+  margin: 0;
+  color: #ff8f98;
+  font-size: 12px;
+`;
 
 function StreamGlyph() {
   return (
@@ -301,12 +449,82 @@ function ArrowGlyph() {
 export default function Dashboard() {
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [checks, setChecks] = useState<ConformityCheck[]>(() =>
+    getInitialConformityChecks(),
+  );
+  const [events, setEvents] = useState<SuiteLog[]>([]);
+  const [running, setRunning] = useState(false);
+  const [minimumPassed, setMinimumPassed] = useState<boolean | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
 
-  const canRun = baseUrl.trim().length > 0 && apiKey.trim().length > 0;
+  const canRun =
+    baseUrl.trim().length > 0 && apiKey.trim().length > 0 && !running;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const passedChecks = useMemo(
+    () =>
+      checks.filter(
+        (check) => check.state === "passed" || check.state === "skipped",
+      ).length,
+    [checks],
+  );
+  const totalChecks = checks.length;
+  const conformityPercent =
+    totalChecks > 0 ? Math.round((passedChecks / totalChecks) * 100) : 0;
+
+  const minimumLabel = useMemo(() => {
+    if (running) {
+      return "Running";
+    }
+    if (minimumPassed === null) {
+      return "Not run";
+    }
+    return minimumPassed ? "Meets minimum" : "Misses minimum";
+  }, [minimumPassed, running]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: wire to runConformitySuite from lib/conformity/suite.ts
+    if (!canRun) {
+      return;
+    }
+
+    setRunning(true);
+    setRunError(null);
+    setMinimumPassed(null);
+    setChecks(getInitialConformityChecks());
+    setEvents([]);
+
+    try {
+      const report = await runConformitySuite({
+        baseUrl,
+        token: apiKey,
+        onChecks: (nextChecks) => {
+          setChecks(nextChecks);
+        },
+        onLog: (entry) => {
+          setEvents((current) => [entry, ...current].slice(0, 220));
+        },
+      });
+
+      setChecks(report.checks);
+      setMinimumPassed(report.minimumPassed);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to run conformity suite.";
+      setRunError(message);
+      setMinimumPassed(false);
+      setEvents((current) => [
+        {
+          timestamp: Date.now(),
+          level: "error",
+          message,
+        },
+        ...current,
+      ]);
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (
@@ -345,46 +563,108 @@ export default function Dashboard() {
             />
           </Field>
           <RunButton type="submit" disabled={!canRun}>
-            Run Conformity Check
+            {running ? "Running..." : "Run Conformity Check"}
             <ArrowGlyph />
           </RunButton>
         </FormCard>
+        {runError ? <ErrorNote>{runError}</ErrorNote> : null}
 
         <Grid>
           <PanelCard>
             <CardHead>
               <CardTitle>Checks</CardTitle>
-              <CardCount>0</CardCount>
+              <CardCount>{checks.length}</CardCount>
             </CardHead>
-            <Empty>
-              <EmptyGlyph>
-                <ChecklistGlyph />
-              </EmptyGlyph>
-              <EmptyTitle>No conformity run yet</EmptyTitle>
-              <EmptyHint>
-                Enter your job server URL and API key, then click Run Conformity
-                Check to begin.
-              </EmptyHint>
-            </Empty>
+            <ChecksList>
+              {checks.map((check) => (
+                <CheckRow key={check.id}>
+                  <CheckHead>
+                    <CheckTitle>{check.title}</CheckTitle>
+                    <CheckBadges>
+                      <RequirementBadge $required={check.requiredForMinimum}>
+                        {check.requiredForMinimum ? "minimum" : "optional"}
+                      </RequirementBadge>
+                      <StatusBadge $state={check.state}>
+                        {check.state}
+                      </StatusBadge>
+                    </CheckBadges>
+                  </CheckHead>
+                  <CheckDetail>{check.detail}</CheckDetail>
+                </CheckRow>
+              ))}
+            </ChecksList>
           </PanelCard>
 
           <PanelCard>
             <CardHead>
               <CardTitle>Event Log</CardTitle>
-              <CardCount>0 entries</CardCount>
+              <CardCount>{events.length} entries</CardCount>
             </CardHead>
-            <Empty>
-              <EmptyGlyph>
-                <StreamGlyph />
-              </EmptyGlyph>
-              <EmptyTitle>No events yet</EmptyTitle>
-              <EmptyHint>
-                Live conformity events will stream here once a run is in
-                progress.
-              </EmptyHint>
-            </Empty>
+            {events.length === 0 ? (
+              <Empty>
+                <EmptyGlyph>
+                  <StreamGlyph />
+                </EmptyGlyph>
+                <EmptyTitle>No events yet</EmptyTitle>
+                <EmptyHint>
+                  Live conformity events will stream here once a run is in
+                  progress.
+                </EmptyHint>
+              </Empty>
+            ) : (
+              <EventList>
+                {events.map((entry, index) => (
+                  <EventRow key={`${entry.timestamp}-${entry.level}-${index}`}>
+                    <EventMeta>
+                      <span>
+                        {new Date(entry.timestamp).toLocaleTimeString()}
+                      </span>
+                      <EventLevel $level={entry.level}>
+                        {entry.level.toUpperCase()}
+                      </EventLevel>
+                    </EventMeta>
+                    <EventMessage>{entry.message}</EventMessage>
+                  </EventRow>
+                ))}
+              </EventList>
+            )}
           </PanelCard>
         </Grid>
+
+        <ScoreCard>
+          <CardHead>
+            <CardTitle>Conformity Score</CardTitle>
+            <CardCount>
+              {passedChecks}/{totalChecks || 0} checks passed
+            </CardCount>
+          </CardHead>
+          <ScoreGrid>
+            <ScoreItem>
+              <ScoreLabel>Passed checks</ScoreLabel>
+              <ScoreValue>
+                {passedChecks}/{totalChecks || 0}
+              </ScoreValue>
+            </ScoreItem>
+            <ScoreItem>
+              <ScoreLabel>Conformity %</ScoreLabel>
+              <ScoreValue>{conformityPercent}%</ScoreValue>
+            </ScoreItem>
+            <ScoreItem>
+              <ScoreLabel>Minimum requirement</ScoreLabel>
+              <ScoreValue
+                $tone={
+                  minimumPassed === null
+                    ? "neutral"
+                    : minimumPassed
+                      ? "ok"
+                      : "bad"
+                }
+              >
+                {minimumLabel}
+              </ScoreValue>
+            </ScoreItem>
+          </ScoreGrid>
+        </ScoreCard>
       </Container>
     </Page>
   );
